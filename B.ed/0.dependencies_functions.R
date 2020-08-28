@@ -42,9 +42,11 @@ potential_ed_params    <- c("param_id", "name", "c2n_leaf", "clumping_factor", "
 #   case: a dataframe containing information about a specific ed run 
 #   input_dir: a directory containing the ed inputs 
 #   write_to: the location where the cases should be written to 
+#  Returns: writes out the ed directory set up for a single ed case
+# 
 # Example 
-# case <- data.frame(casename = 'test', IYEARA = 2005, IYEARZ = 2006)
-# setup_ed_run(case, write_to = here::here('test_case'))
+# case <- data.frame(casename = c('test1', 'test2'), IYEARA = 2005, IYEARZ = 2006)
+# for(i in 1:nrow(case)){  setup_ed_run(case[i,], write_to = here::here('test'))}
 # cd /qfs/people/dorh012/forte-disturbance/test_case/test
 # /people/dorh012/ed-source-code/ed_2.2-opt ./ED2IN > run_log.txt
 setup_ed_run <- function(case, input_dir = INPUT_DIR, write_to = WRITE_TO){
@@ -85,7 +87,7 @@ setup_ed_run <- function(case, input_dir = INPUT_DIR, write_to = WRITE_TO){
   ed2in_template_file <- file.path(INPUT_DIR, "ED2IN")
   assert_that(file.exists(ed2in_template_file), msg = paste0('template ED2IN file is missing from ', INPUT_DIR))
   ed2in_template <- read_ed2in(ed2in_template_file) # the read_ed2in if a function defined in read_ed2in.R
-
+  
   # Import the UMBS soil data this function comes from the fortebaseline pacakge 
   # which was set up for the Shiklomanov et al. 2020. 
   soil_data <- fortebaseline::umbs_soil()
@@ -112,7 +114,7 @@ setup_ed_run <- function(case, input_dir = INPUT_DIR, write_to = WRITE_TO){
     # Define the paths to the inputs. 
     VEG_DATABASE = file.path(INPUT_DIR, "EDI", "oge2OLD", "OGE2_"),    # this is the path to the vegetation data base, this data is not relevant  see https://github.com/FoRTExperiment/ed4forte/issues/4
     SOIL_DATABASE = file.path(INPUT_DIR, "EDI", "faoOLD", "FAO_"),     # Path to a  soil data base that contains information about soil texture ect.
-
+    
     LU_DATABASE = file.path(INPUT_DIR, "EDI", "ed_inputs", "glu"),
     THSUMS_DATABASE = file.path(INPUT_DIR, "EDI", "ed_inputs/"),
     ED_MET_DRIVER_DB = file.path(INPUT_DIR, "met2", "NARR-ED2_long", "ED_MET_DRIVER_HEADER"),
@@ -144,7 +146,7 @@ setup_ed_run <- function(case, input_dir = INPUT_DIR, write_to = WRITE_TO){
     IOOUTPUT = 0,      # Observation time output, turned off 
     MONTH_YRSTEP = 7,  # Month in which the yearly time step (patch dynamics) should occur, the default is set to 7
     IGOUTPUT = 0       # If IHRZRAD is not 0 then write patch table and gap relization files. 
-    )
+  )
   
   if(!is.null(config_path)){
     config_tags <- list(IEDCNFGF = config_path)
@@ -158,7 +160,7 @@ setup_ed_run <- function(case, input_dir = INPUT_DIR, write_to = WRITE_TO){
   } else{
     from_case_tags <- NULL
   }
-
+  
   ed2in_tags <- append(append(ed2in_tags, config_tags), from_case_tags)
   
   # Modify the ED2IN file with the updated information
@@ -169,6 +171,34 @@ setup_ed_run <- function(case, input_dir = INPUT_DIR, write_to = WRITE_TO){
   write_ed2in(ed2in, file, barebones = TRUE) 
   file
   
+}
+
+
+# Write a sh script that will launch a set of ed runs/cases
+# 
+# Arguments 
+#   dir: the location of the different cases that have been set up and are ready to run
+#   ed_exe: the path to the ed executable to run
+# Returns: the path to the sh sript that launches a  series of ed runs
+# setup_sh(here::here('test'))
+setup_sh <- function(dir, ed_exe = '/people/dorh012/ed-source-code/ed_2.2-opt'){
+  
+  # Check the inputs
+  assert_that(file.exists(ed_exe))
+  assert_that(dir.exists(dir))
+  
+  d <- list.files(dir, full.names = TRUE)
+  lines <- list('#!/bin/bash', '')
+  
+  for(i in seq_along(d)){
+    lines <- append(lines, paste0('cd ', d[[i]] ))
+    lines <- append(lines, list(paste0(ed_exe, ' ./ED2IN > run_log.txt'), ''))
+  }
+  lines <- unlist(lines)
+  
+  out <- file.path(dir, 'run_ed.sh')
+  writeLines(text = lines, con = out)
+  return(out)
 }
 
 
