@@ -2,8 +2,8 @@
 <!DOCTYPE config SYSTEM "ed_event.dtd">
 <eventlist>
   <event>
-    <year> 2002 </year>
-    <doy> 187 </doy>
+    <year> 2019 </year>
+    <doy> 141 </doy>
     <harvest>
       <stor_frac> 0.65 </stor_frac>
     </harvest>
