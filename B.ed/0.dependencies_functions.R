@@ -1,7 +1,6 @@
 ## Load the dependencies and define the functions that are used to set up an ed run.
 ## Written to run on constance with R/3.4.3
 # TODO where did the other inputs from the EDI file come from? 
-# TODO write some function that will help set up a bash script that will launch mulitple ED runs 
 # TODO write the function that will parse out the output data from a set of cases and merge into a single data object.
 # 0. Dependencies ------------------------------------------------------------------------------------------------
 # Packages that can be installed through devtools or CRAN. 
@@ -24,10 +23,11 @@ assertthat::assert_that(dir.exists(PECAN_DIR))
 source(file.path(PECAN_DIR,  'models', 'ed', 'R', 'read_ed2in.R'))
 source(file.path(PECAN_DIR,  'models', 'ed', 'R', 'write_ed2in.R'))
 
+# Define the path to the inputs to use
 INPUT_DIR <- here::here('A.inputs')
-WRITE_TO <- here::here('test'); dir.create(WRITE_TO)
 
-case <- data.frame(casename = 'test', 'fase' = 3)
+# Define a vector of the ed settings and parameters that could be read into ED2IN file, not the params might take 
+# a bit of work to get the formatting to play with the pfts. 
 potential_ed_settings  <- c('IYEARA', 'IYEARZ', 'IMONTHA', 'IMONTHZ', 'IDATEA', 'IDATEZ', 'ED_MET_DRIVER_DB', 'EVENT_FILE')
 potential_ed_params    <- c("param_id", "name", "c2n_leaf", "clumping_factor", "f_labile", 
                             "fineroot2leaf", "growth_resp_factor", "leaf_reflect_nir",  "leaf_reflect_vis", "leaf_respiration_rate_m2",  
@@ -46,7 +46,7 @@ potential_ed_params    <- c("param_id", "name", "c2n_leaf", "clumping_factor", "
 # 
 # Example 
 # case <- data.frame(casename = c('test1', 'test2'), IYEARA = 2005, IYEARZ = 2006)
-# for(i in 1:nrow(case)){  setup_ed_run(case[i,], write_to = here::here('test'))}
+# for(i in 1:nrow(case)){ setup_ed_run(case[i,], write_to = here::here('test')) }
 # cd /qfs/people/dorh012/forte-disturbance/test_case/test
 # /people/dorh012/ed-source-code/ed_2.2-opt ./ED2IN > run_log.txt
 setup_ed_run <- function(case, input_dir = INPUT_DIR, write_to = WRITE_TO){
@@ -102,7 +102,7 @@ setup_ed_run <- function(case, input_dir = INPUT_DIR, write_to = WRITE_TO){
     IMONTHZ = 6, IDATEZ = 1,
     
     # The first and last year of met data. 
-    METCYC1 = 1900, METCYCF = 2019,
+    METCYC1 = 1900, METCYCF = 2030,
     
     # Site information 
     POI_LAT = 45.5625, POI_LON = -84.6975,
@@ -117,7 +117,7 @@ setup_ed_run <- function(case, input_dir = INPUT_DIR, write_to = WRITE_TO){
     
     LU_DATABASE = file.path(INPUT_DIR, "EDI", "ed_inputs", "glu"),
     THSUMS_DATABASE = file.path(INPUT_DIR, "EDI", "ed_inputs/"),
-    ED_MET_DRIVER_DB = file.path(INPUT_DIR, "met2", "NARR-ED2_long", "ED_MET_DRIVER_HEADER"),
+    ED_MET_DRIVER_DB = file.path(INPUT_DIR, "NARR-ED2", "ED_MET_DRIVER_HEADER"),
     
     # UMBS soil characteristics (from Gough et al. 2010 FEM)
     ISOILFLG = 2,  # A flag that allows the soil characteristics to be defined below. 
@@ -202,11 +202,11 @@ setup_sh <- function(dir, ed_exe = '/people/dorh012/ed-source-code/ed_2.2-opt'){
 }
 
 
-
-
-
-
-
+# Eample when testing -----------------------------------------------------
+# WRITE_TO <- here::here('test'); dir.create(WRITE_TO)
+# case <- data.frame(casename = 'full-length', IYEARA = 1900, IYEARZ = 2030)
+# setup_ed_run(case, input_dir = INPUT_DIR, write_to = WRITE_TO)
+# setup_sh(here::here('test'))
 
 
 
