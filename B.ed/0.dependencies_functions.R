@@ -187,7 +187,8 @@ setup_sh <- function(dir, ed_exe = '/people/dorh012/ed-source-code/ed_2.2-opt'){
   assert_that(file.exists(ed_exe))
   assert_that(dir.exists(dir))
   
-  d <- list.files(dir, full.names = TRUE)
+  d <- list.dirs(dir, full.names = TRUE)
+  d <- d[d != dir]
   lines <- list('#!/bin/bash', '')
   
   for(i in seq_along(d)){
