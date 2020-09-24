@@ -20,7 +20,7 @@ name <- paste0(basename(outdir), '.rds')
 read_monthly_fxn <- function(DIR){
   assertthat::assert_that(dir.exists(DIR))
   name <- paste0(basename(DIR), '.rds') 
-  x    <- file.path(DIR, save_file)
+  x    <- file.path(DIR, name)
   read_monthly_dir(DIR, save_file = x)
   return(x)
 }
