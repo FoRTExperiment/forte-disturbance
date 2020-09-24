@@ -11,7 +11,7 @@ WRITE_TO  <- file.path(BASE_DIR, 'exp-1'); dir.create(WRITE_TO, showWarnings = F
 EVENT_DIR <- file.path(BASE_DIR, 'A.inputs', 'events')
 
 # Load the required pacakges and functions. 
-to_source <- file.path(BASE_DIR, "B.ed", "0.dependencies_functions.R")
+to_source <- file.path(BASE_DIR, "B.ed", "0A.dependencies_functions.R")
 stopifnot(file.exists(to_source))
 source(to_source)
 
