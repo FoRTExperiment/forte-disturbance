@@ -205,7 +205,7 @@ setup_sh <- function(dir, ed_exe = '/people/dorh012/ed-source-code/ed_2.2-opt'){
 
 # Eample when testing -----------------------------------------------------
 # WRITE_TO <- here::here('test'); dir.create(WRITE_TO)
-# case <- data.frame(casename = 'full-length', IYEARA = 1900, IYEARZ = 2030)
+# case <- data.frame(casename = 'no-late-pines', IYEARA = 1900, IYEARZ = 1950)
 # setup_ed_run(case, input_dir = INPUT_DIR, write_to = WRITE_TO)
 # setup_sh(here::here('test'))
 
