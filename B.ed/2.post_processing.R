@@ -4,7 +4,7 @@
 
 # 0. Set Up  ------------------------------------------------------------------------------------
 # Define directories. 
-BASE_DIR <- here::here()
+BASE_DIR <- "/people/dorh012/forte-disturbance"
 OUT_DIR  <- file.path(BASE_DIR, 'ED-outputs')
 dir.create(OUT_DIR)
 
