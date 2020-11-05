@@ -14,6 +14,16 @@ stopifnot(file.exists(to_source))
 source(to_source)
 
 # 1. Process output directories -----------------------------------------------------------------
+# The test directories
+files <- process_outputs(BASE_DIR = BASE_DIR, exp_dirs = "test")
+
+test_out <- file.path(OUT_DIR, 'test')
+dir.create(test_out)
+
+system2('cp', args = c(paste0(files, collapse = ' '), test_out))
+
+
+
 # Start with experiment 1! And move them into the output direcotry 
 files <- process_outputs(BASE_DIR = BASE_DIR, exp_dirs = "exp-1")
 
@@ -24,11 +34,6 @@ system2('cp', args = c(paste0(files, collapse = ' '), exp1_out))
 
 
 # 2. Move to local machine ----------------------------------------------------------------------
-# As of right now there is no great way to do this, ideally some code would be added here 
-# that could move the files to a local machine but as of right now there isn't really a great way to 
-# do that, then the results should be saved on osf i think.. .
-system2('ssh', args = 'constance')
-
-
+message('move the ED outputs with scp')
 
 
