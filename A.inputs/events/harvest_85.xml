@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!DOCTYPE config SYSTEM "ed_event.dtd">
+<eventlist>
+  <event>
+    <year> 2019 </year>
+    <doy> 141 </doy>
+    <harvest>
+      <stor_frac> 0.85 </stor_frac>
+    </harvest>
+  </event>
+</eventlist>
