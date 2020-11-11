@@ -1,0 +1,347 @@
+---
+title: "Experiment 1"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_notebook: 
+    toc: true
+    toc_float: true
+---
+
+# Description 
+
+In experiment 1 we apply the different FoRTE girdling treatments to the ED forest stand. This stand starts from near bare ground starting in 1900. After a series of tests, we had to exclude pines from the ED configuration. 
+
+See [GitHub issue](https://github.com/FoRTExperiment/FoRTE-mgmt/issues/77#issue-687269729) for some more details. 
+
+Observations 
+
+* NPP winter pattern is interesting
+* By 2030 NPP hasn't recovered 
+* There is a small pattern in the Rh 
+
+
+Questions 
+
+* Based on discussion with Lisa do we want to take a look at aboveground bark biomass? Would that be something easy to compare with Max's dendrology band measurements? 
+* Would it make sense to report values as difference harvest 45% - harvest 0%? Or the difference from a refernce value for a single year? 
+* Should we use ED output to calculate resillence? 
+* Should we run ED with climatological inputs?
+
+
+### Set Up 
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+# The defaults for the chunks
+knitr::opts_chunk$set(echo = TRUE, fig.width = 5, fig.height = 3)
+
+library(ggplot2)
+library(magrittr)
+library(data.table)
+library(cowplot)
+library(lubridate)
+library(purrr)
+
+BASE_DIR <- here::here()
+THEME    <- theme_bw(base_size = 15)
+```
+
+Import the results 
+
+```{r}
+# Note that this is the object created with the drake frame work, there should be some better way to trigger this. 
+exp_object <- readRDS(file.path(BASE_DIR, 'ED-outputs', "exp-1.rds"))
+exp_object <- map(exp_object, function(x){ x[year < 2030, ] }) # Note the year 2030 is not a complete run 
+```
+
+Event information 
+
+```
+<year> 2019 </year>
+<doy> 141 </doy>
+```
+
+# Baseline Scenario
+
+
+```{r, fig.width = 3, fig.height = 3}
+ggplot() + 
+  geom_point(data = exp_object$NPP[scn == 'harvest_0', ], aes(year, value)) +
+  THEME +
+  labs(title ='NPP',
+       x = 'Year', 
+       y = unique(exp_object$NPP[scn == 'harvest_0', ][['unit']])) -> 
+  NPP_plot
+
+ggplot() + 
+  geom_point(data = exp_object$LAI[scn == 'harvest_0', ], aes(datetime, value)) + 
+  THEME + 
+  labs(title ='LAI',
+       x = 'Year', 
+       y = unique(exp_object$LAI[scn == 'harvest_0', ][['unit']])) -> 
+  LAI_plot
+
+ggplot() + 
+  geom_point(data = exp_object$NEP[scn == 'harvest_0', ], aes(year, value)) +
+  THEME + 
+  labs(title ='NEP',
+       x = 'Year', 
+       y = unique(exp_object$NEP[scn == 'harvest_0', ][['unit']])) -> 
+  NEP_plot
+
+ggplot() + 
+  geom_point(data = exp_object$ABG[scn == 'harvest_0', ], aes(year, value)) + 
+  THEME + 
+  labs(title ='ABG',
+       x = 'Year', 
+       y = unique(exp_object$ABG[scn == 'harvest_0', ][['unit']])) -> 
+  ABG_plot
+
+
+plot_grid(ABG_plot, NPP_plot, NEP_plot, LAI_plot)
+
+```
+
+The base line scenario looks good to me it is intresting just how much smoother the output looks when we swtich to the climatological record instead of weather, do we want to only use the climatological values. 
+
+
+# Experiment 1 
+
+## Above Ground Biomass
+
+So the differences in total above ground biomass between the different sencaiors is faily small and is really only visible when we zoom in on the disturbance and recovery. What is intresting is that the as we would expect the no harvest scenario has a larger biomass until September and then the AGB starts to even out, is pretty similar during winter but then with the next growing season the patches with the more extreme treatments have a larger biomass. 
+
+
+```{r}
+exp_object$ABG$datetime <- date(exp_object$ABG$datetime)
+data <- exp_object$ABG[  , value := sum(value), by = c("datetime", "scn", "unit", "year")] 
+
+data %>%  
+  ggplot() + 
+  geom_vline(xintercept = date('2019-05-01'), color = 'grey', size = 2) + 
+  geom_point(aes(datetime, value, color = scn, group = interaction(scn, pft_name))) + 
+  THEME + 
+  labs(x = 'Year', y = unique(exp_object$ABG$unit), title = 'ABG') 
+```
+
+```{r}
+data[year %in% 2018:2020 & scn != 'harvest_0', ] %>% 
+  .[datetime >= date('2019-05-01')] %>%  
+  ggplot() + 
+  geom_vline(xintercept = date('2019-05-01'), color = 'grey', size = 2) + 
+  geom_line(aes(datetime, value, color = scn, group = interaction(scn, pft_name)), size = 1) + 
+  THEME + 
+  labs(x = 'Year', y = unique(exp_object$ABG$unit), title = 'ABG') 
+```
+
+
+
+## NPP 
+
+Annual values, what is odd is that the harvest 0% has NPP is more negative than the other treatments? Is that because of reading in the 0 harvest? Also does the monthly NPP have any other patterns?  
+
+
+```{r}
+exp_object$NPP %>% 
+  .[year %in% 2018:20205, ] %>% 
+  ggplot() + 
+  geom_vline(aes(xintercept = 2019), color ='black') + 
+  geom_line(aes(year, value, color = scn, group = interaction(scn, pft_name))) + 
+  THEME + 
+  labs(x = 'Year', y = unique(exp_object$NPP$unit), title = 'Annual NPP')
+```
+
+So the annual is some what hard to see the the pattern with it but after a decade there the NPP has not returned to the annual values. 
+
+```{r}
+h0_object  <- readRDS(file.path(BASE_DIR, 'ED-outputs', 'test', 'baseline.rds'))
+h45_object <- readRDS(file.path(BASE_DIR, 'ED-outputs', 'exp-1', 'harvest_45.rds'))
+h65_object <- readRDS(file.path(BASE_DIR, 'ED-outputs', 'exp-1', 'harvest_65.rds'))
+h85_object <- readRDS(file.path(BASE_DIR, 'ED-outputs', 'exp-1', 'harvest_85.rds'))
+
+h0 <- as.data.table(h0_object$df_cohort[[1]])[  ,list(datetime, MMEAN_NPP_CO, PFT, DBH, NPLANT)]
+h45 <- as.data.table(h45_object$df_cohort[[1]])[  ,list(datetime, MMEAN_NPP_CO, PFT, DBH, NPLANT)]
+h65 <- as.data.table(h65_object$df_cohort[[1]])[  ,list(datetime, MMEAN_NPP_CO, PFT, DBH, NPLANT)]
+h85 <- as.data.table(h85_object$df_cohort[[1]])[  ,list(datetime, MMEAN_NPP_CO, PFT, DBH, NPLANT)]
+
+h0$scn  <- 'harvest_0'
+h45$scn <- 'harvest_45'
+h65$scn <- 'harvest_65'
+h85$scn <- 'harvest_85'
+
+NPP <- rbind(h0, h45, h65, h85)
+# Convert the NPP units from per plant to unit area
+NPP$value <- NPP$MMEAN_NPP_CO * NPP$NPLANT
+NPP$unit  <- unique(exp_object$NPP$unit)
+NPP <- NPP[, c("datetime", "PFT", "scn", "value", 'unit')]
+NPP$year <- lubridate::year(NPP$datetime)
+NPP$datetime <- date(NPP$datetime)
+NPP_monthly <- NPP 
+```
+
+
+```{r}
+NPP_monthly <- NPP_monthly[, value := sum(value), by = c("datetime", "scn", "unit", "year")]
+
+NPP_monthly %>% 
+  ggplot(aes(datetime, value, color = scn)) + 
+  # Note because of the fact that the results are recorded monthly the disturbance date is May 5th.
+  geom_vline(xintercept = date('2019-05-01'), color = 'grey', size = 2) + 
+  geom_line() + 
+  THEME + 
+  labs(title = 'Monthly NPP', y = unique(to_plot_NPP$unit), x = 'Time') 
+```
+
+
+```{r}
+NPP_monthly %>% 
+  .[year %in% 2018:2030] %>%  
+  ggplot(aes(datetime, value, color = scn)) + 
+  # Note because of the fact that the results are recorded monthly the disturbance date is May 5th.
+  geom_vline(xintercept = date('2019-05-01'), color = 'grey', size = 2) + 
+  geom_line() + 
+  THEME + 
+  labs(title = 'Monthly NPP', y = unique(to_plot_NPP$unit), x = 'Time') 
+```
+
+Would it make sense to look at the differrence between the baseline and treatment scenarios? 
+
+Observations 
+  
+* Even after 12 years the stand has not recovered in term of NPP values 
+* Also check out the difference in the winter NPP! I wasn't expecting that 
+
+
+## NEP 
+
+```{r}
+exp_object$NEP %>% 
+  dplyr::filter(year >= 2017 & year <= 2021) %>% 
+  ggplot() + 
+  geom_vline(xintercept = 2019, color = 'grey', size = 2) + 
+  geom_line(aes(year, value, color = scn)) + 
+  THEME + 
+  labs(x = 'Year', y = unique(exp_object$NEP$unit), title = 'Annual NEP')
+```
+
+```{r}
+h0_object  <- readRDS(file.path(BASE_DIR, 'ED-outputs', 'test', 'baseline.rds'))
+h45_object <- readRDS(file.path(BASE_DIR, 'ED-outputs', 'exp-1', 'harvest_45.rds'))
+h65_object <- readRDS(file.path(BASE_DIR, 'ED-outputs', 'exp-1', 'harvest_65.rds'))
+h85_object <- readRDS(file.path(BASE_DIR, 'ED-outputs', 'exp-1', 'harvest_85.rds'))
+
+h0 <- as.data.table(h0_object$df_scalar[[1]])[ ,list(datetime, MMEAN_NEP_PY)]
+h45 <- as.data.table(h45_object$df_scalar[[1]])[ ,list(datetime, MMEAN_NEP_PY)]
+h65 <- as.data.table(h65_object$df_scalar[[1]])[ ,list(datetime, MMEAN_NEP_PY)]
+h85 <- as.data.table(h85_object$df_scalar[[1]])[ ,list(datetime, MMEAN_NEP_PY)]
+
+h0$scn  <- 'harvest_0'
+h45$scn <- 'harvest_45'
+h65$scn <- 'harvest_65'
+h85$scn <- 'harvest_85'
+
+NEP <- rbind(h0, h45, h65, h85)
+NEP$unit  <- unique(exp_object$NEP$unit)
+NEP <- NEP[, c("datetime", "scn", "value" = "MMEAN_NEP_PY")]
+names(NEP) <- c("datetime", "scn", "value")
+NEP$year <- lubridate::year(NEP$datetime)
+NEP$datetime <- date(NEP$datetime)
+```
+
+
+```{r}
+NEP %>% 
+  dplyr::filter(year >= 2019 & year <= 2021) %>% 
+  ggplot() + 
+  geom_vline(xintercept = date('2019-05-01'), color = 'grey', size = 2) + 
+  geom_line(aes(datetime, value, color = scn)) + 
+  THEME + 
+  labs(x = 'Year', y = unique(exp_object$NEP$unit), title = 'Monthly NEP')
+```
+
+
+## LAI
+
+```{r}
+exp_object$LAI$year <- year(exp_object$LAI$datetime)
+exp_object$LAI %>%
+  dplyr::filter(year >= 2019 & year <= 2021) %>% 
+  ggplot() + 
+  geom_vline(xintercept = date('2019-05-01'), color = 'grey', size = 2) + 
+  geom_line(aes(datetime, value, color = scn)) + 
+  THEME + 
+  labs(x = 'Year', y = unique(exp_object$LAI$unit), title = 'Monthly LAI') + 
+  facet_wrap('pft_name', ncol = 1)
+```
+
+## Soil Respiration 
+
+```{r}
+h0 <- as.data.table(h0_object$df_scalar[[1]])[  ,list(datetime, MMEAN_RH_PY)]
+h45 <- as.data.table(h45_object$df_scalar[[1]])[  ,list(datetime, MMEAN_RH_PY)]
+h65 <- as.data.table(h65_object$df_scalar[[1]])[  ,list(datetime, MMEAN_RH_PY)]
+h85 <- as.data.table(h85_object$df_scalar[[1]])[  ,list(datetime, MMEAN_RH_PY)]
+
+h0$scn  <- 'harvest_0'
+h45$scn <- 'harvest_45'
+h65$scn <- 'harvest_65'
+h85$scn <- 'harvest_85'
+
+RH    <- rbind(h0, h45, h65, h85)
+units <- 'kg/m2/yr'
+
+RH %>% 
+ggplot(aes(datetime, MMEAN_RH_PY, color = scn)) + 
+  geom_line() + 
+  THEME + 
+  labs(title = 'Monthly Heterotrophic Respiration', 
+       y = units,
+       x = 'Date Time')
+```
+
+```{r}
+RH[ , year := year(datetime)] %>% 
+  .[year %in% 2018:2020, ] %>% 
+  ggplot(aes(datetime, MMEAN_RH_PY, color = scn)) + 
+  geom_line() + 
+  THEME + 
+  labs(title = 'Monthly Heterotrophic Respiration', 
+       y = units,
+       x = 'Date Time')
+```
+
+## Mortality 
+
+Honestly, I don't really know what the morality output is so might not be easy to interpret but it looks like by 2020 the morality related to the disturbance events has ended. 
+
+
+```{r}
+h0 <- as.data.table(h0_object$df_cohort[[1]])[  ,list(datetime, mmean_mort_rate_co_carbon)]
+h45 <- as.data.table(h45_object$df_cohort[[1]])[  ,list(datetime, mmean_mort_rate_co_carbon)]
+h65 <- as.data.table(h65_object$df_cohort[[1]])[  ,list(datetime, mmean_mort_rate_co_carbon)]
+h85 <- as.data.table(h85_object$df_cohort[[1]])[  ,list(datetime, mmean_mort_rate_co_carbon)]
+
+h0$scn  <- 'harvest_0'
+h45$scn <- 'harvest_45'
+h65$scn <- 'harvest_65'
+h85$scn <- 'harvest_85'
+
+mortality    <- rbind(h0, h45, h65, h85)
+units <- '1/yr'
+
+mortality[ ,year := year(datetime)] %>% 
+  .[year %in% 2018:2021, ] %>% 
+ggplot(aes(datetime, mmean_mort_rate_co_carbon, color = scn)) + 
+  geom_line() + 
+  THEME + 
+  labs(title = 'Monthly Mean Mortlaity Rate per Cohort', 
+       y = units,
+       x = 'Date Time')
+```
+
+<br>
+
+**** 
+
+```{r}
+sessionInfo()
+```
