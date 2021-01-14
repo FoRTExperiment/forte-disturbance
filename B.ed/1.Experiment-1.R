@@ -22,8 +22,10 @@ source(to_source)
 # Start by defining the ED run information. 
 IYEARA <- 1900
 IYEARZ <- 2030
-cases  <- c('harvest_0',  'harvest_45','harvest_65', 'harvest_85')
-event_file <- file.path(EVENT_DIR, paste0(cases, '.xml')) # There should be an event file for each of FoRTE treatment groups.
+
+# Find the event files
+event_file <- list.files(EVENT_DIR, pattern = '1day_above.xml', full.names = TRUE)
+cases      <- gsub(pattern = '.xml', replacement = '', x = basename(event_file))
 assertthat::assert_that(all(file.exists(event_file)))
 # Important! When reading in the event_file paths they must be written out as a string, 
 # otherwise ED will fail but will throw an uninformative error message realted to 
