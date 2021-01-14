@@ -222,6 +222,39 @@ process_ABG <- function(ed_object, scn_name){
 }
 
 
+process_GPP <- function(ed_object, scn_name){
+  
+  # Make sure that the object being read is ED output. 
+  req_names <- c("basename", "df_scalar", "df_cohort", "df_soil", "df_pft", "outdir")
+  missing_names <- req_names %in% names(ed_object)
+  assert_that(all(missing_names), msg = 'Not an ED object')
+  
+  GPP <- as.data.table(ed_object$df_cohort[[1]])[  ,list(datetime, value = MMEAN_GPP_CO, PFT, DBH, NPLANT)]
+  
+  # Format the data table
+  GPP$year  <- year(GPP$datetime)
+  GPP$month <- month(GPP$datetime)
+  GPP$variable <- "MMEAN_GPP_CO"
+  GPP <- add_pft_names(GPP)
+  GPP <- add_var_info(GPP)
+  GPP$scn <- scn_name 
+  
+  # Convert from a per plant to per area value. 
+  GPP$value <- GPP$NPLANT * GPP$value
+  GPP$unit  <- gsub(pattern = '/pl', replacement = '/m2', GPP$unit)
+  
+  # Change from a per year to a per month flux 
+  GPP$value <- GPP$value/12 
+  GPP$unit  <- gsub(pattern = '/yr', replacement = '', GPP$unit)
+  GPP$description <- gsub(pattern = 'mean - ', replacement = '', GPP$description)
+  
+  return(GPP)
+  
+}
+
+
+
+
 # From that the list from by scn to by variable
 #   Args 
 #     name: the name of the data frame to sort by 
@@ -231,7 +264,8 @@ ed_format_list <- function(name, to_merge){
   
   assert_that(is.list(to_merge))
   assert_that(length(to_merge) >= 1, msg = 'more input files needed to merge')
-  assert_that(name %in% names(to_merge[[1]]))
+  check_names <- sapply(to_merge, function(d){assert_that(name %in% names(d))}) 
+  assert_that(all(check_names))
   
   # Create an empty data table and select name of the list to save 
   out <- data.table()
@@ -242,4 +276,5 @@ ed_format_list <- function(name, to_merge){
   return(out)
   
 }
+
 

@@ -14,24 +14,22 @@ stopifnot(file.exists(to_source))
 source(to_source)
 
 # 1. Process output directories -----------------------------------------------------------------
-# The test directories
-files <- process_outputs(BASE_DIR = BASE_DIR, exp_dirs = "test")
-
-test_out <- file.path(OUT_DIR, 'test')
-dir.create(test_out)
-
-system2('cp', args = c(paste0(files, collapse = ' '), test_out))
-
-
-
 # Start with experiment 1! And move them into the output direcotry 
-files <- process_outputs(BASE_DIR = BASE_DIR, exp_dirs = "exp-1")
-
+files    <- process_outputs(BASE_DIR = BASE_DIR, exp_dirs = 'exp-1')
 exp1_out <- file.path(OUT_DIR, 'exp-1')
 dir.create(exp1_out)
 
-system2('cp', args = c(paste0(files, collapse = ' '), exp1_out))
+# Start with experiment 1! And move them into the output direcotry 
+files    <- process_outputs(BASE_DIR = BASE_DIR, exp_dirs = 'test')
+test_out <- file.path(OUT_DIR, 'test')
+dir.create(test_out)
+system2('cp', args = c(paste0(files, collapse = ' '), test_out))
 
+# Proccess the disturbance files
+files    <- process_outputs(BASE_DIR = BASE_DIR, exp_dirs = 'disturbence-treatments')
+dist_out <- file.path(OUT_DIR, 'disturbence-treatments')
+dir.create(dist_out)
+system2('cp', args = c(paste0(files, collapse = ' '), dist_out))
 
 # 2. Move to local machine ----------------------------------------------------------------------
 message('move the ED outputs with scp')
