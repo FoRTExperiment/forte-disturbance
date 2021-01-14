@@ -1,0 +1,26 @@
+READ ME : this files describes the steps for downloading, processing and setting up the inputs to run 
+ED for the forte-disturbence scenarios. 
+
+TO DO 
+  1. Start by downloading the NARR-ED2.tar.gz from
+    https://github.com/FoRTExperiment/ed4forte/releases/download/met-ed2/NARR-ED2.tar.gz and save files the inputs 
+    in the forte-disturbance/A.inputs directory. 
+  2. Souce 1.met_input_processing.R on pic, this script will only need to be ran once and will generate a complete set of met inputs for the ED run.
+
+  
+  
+FILE DESCRIPTIONS
+  * READ-ME.txt this file 
+  * ED2IN : the ed input file set up for UMBS designed by A. Shiklomanov, downlaoded from 
+    https://github.com/ashiklom/fortebaseline/blob/master/inst/ED2IN. 
+  * events : a directory of harvest event xml files based on the harvest 
+             templates (https://github.com/EDmodel/ED2/blob/master/EDTS/Templates/tonzi_harvest.xml) set up to reproduce the FoRTE girdling treatment groups. 
+  
+    
+
+
+
+
+
+
+
