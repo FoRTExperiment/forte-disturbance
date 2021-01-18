@@ -18,14 +18,12 @@ source(to_source)
 files    <- process_outputs(BASE_DIR = BASE_DIR, exp_dirs = 'exp-1')
 exp1_out <- file.path(OUT_DIR, 'exp-1')
 dir.create(exp1_out)
+rds_files <- list.files(file.path(BASE_DIR, 'exp-1'), pattern = '.rds', recursive = TRUE, full.names = TRUE)
+system2('cp', args = c(paste0(rds_files, collapse = ' '), exp1_out))
 
-# Start with experiment 1! And move them into the output direcotry 
-files    <- process_outputs(BASE_DIR = BASE_DIR, exp_dirs = 'test')
-test_out <- file.path(OUT_DIR, 'test')
-dir.create(test_out)
-system2('cp', args = c(paste0(files, collapse = ' '), test_out))
 
-# Proccess the disturbance files
+# Process the runs from the disturbance runs, these are all the different disturbance 
+# treatments we applied to ED while we were trying out different configurations. 
 files    <- process_outputs(BASE_DIR = BASE_DIR, exp_dirs = 'disturbence-treatments')
 dist_out <- file.path(OUT_DIR, 'disturbence-treatments')
 dir.create(dist_out)
