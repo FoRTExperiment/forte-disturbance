@@ -3,8 +3,8 @@ ED for the forte-disturbence scenarios.
 
 TO DO 
   1. Start by downloading the NARR-ED2.tar.gz from
-    https://github.com/FoRTExperiment/ed4forte/releases/download/met-ed2/NARR-ED2.tar.gz and save files the inputs 
-    in the forte-disturbance/A.inputs directory. 
+    https://github.com/FoRTExperiment/ed4forte/releases/download/met-ed2/NARR-ED2.tar.gz and save as 
+    in the forte-disturbance/A.inputs/NARR-ED2-main. 
   2. Souce 1.met_input_processing.R on pic, this script will only need to be ran once and will generate a complete set of met inputs for the ED run.
 
   
