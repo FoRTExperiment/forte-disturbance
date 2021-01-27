@@ -172,7 +172,11 @@ setup_ed_run <- function(case, input_dir = INPUT_DIR, write_to = WRITE_TO){
     from_case_tags <- NULL
   }
   
-  ed2in_tags <- append(append(ed2in_tags, config_tags), from_case_tags)
+  # Combine the tag information, make sure that if there are duplicate entries 
+  # that the values from the case tags is used. 
+  ed2in_tags <- append(ed2in_tags, config_tags)
+  default_to_keep <- base::setdiff(names(ed2in_tags), names(from_case_tags))
+  ed2in_tags <- append(default_to_keep, from_case_tags)
   
   # Modify the ED2IN file with the updated information
   ed2in <- modifyList(ed2in_template, ed2in_tags)
