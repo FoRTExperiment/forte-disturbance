@@ -127,7 +127,7 @@ setup_ed_run <- function(case, input_dir = INPUT_DIR, write_to = WRITE_TO){
     
     LU_DATABASE = file.path(INPUT_DIR, "EDI", "ed_inputs", "glu"),
     THSUMS_DATABASE = file.path(INPUT_DIR, "EDI", "ed_inputs/"),
-    ED_MET_DRIVER_DB = file.path(INPUT_DIR, "NARR-ED2", "ED_MET_DRIVER_HEADER"),
+   # ED_MET_DRIVER_DB = file.path(INPUT_DIR, "NARR-ED2", "ED_MET_DRIVER_HEADER"),
     
     # UMBS soil characteristics (from Gough et al. 2010 FEM)
     ISOILFLG = 2,  # A flag that allows the soil characteristics to be defined below. 
@@ -172,14 +172,21 @@ setup_ed_run <- function(case, input_dir = INPUT_DIR, write_to = WRITE_TO){
     from_case_tags <- NULL
   }
   
-  # Combine the tag information, make sure that if there are duplicate entries 
-  # that the values from the case tags is used. 
-  ed2in_tags <- append(ed2in_tags, config_tags)
-  default_to_keep <- base::setdiff(names(ed2in_tags), names(from_case_tags))
-  ed2in_tags <- append(default_to_keep, from_case_tags)
+  # # Combine the tag information, make sure that if there are duplicate entries 
+  # # that the values from the case tags is used. 
+  # ed2in_tags <- append(ed2in_tags, config_tags)
+  # default_to_keep <- base::setdiff(names(ed2in_tags), names(from_case_tags))
+  # ed2in_tags <- append(default_to_keep, from_case_tags)
+  # 
+  # # Modify the ED2IN file with the updated information
+  # ed2in <- modifyList(ed2in_template, ed2in_tags)
+  
+  ed2in_tags <- append(append(ed2in_tags, config_tags), from_case_tags)
   
   # Modify the ED2IN file with the updated information
   ed2in <- modifyList(ed2in_template, ed2in_tags)
+  
+  
   
   # Write the ed2 in file out 
   file <- file.path(OUTOUT, "ED2IN")

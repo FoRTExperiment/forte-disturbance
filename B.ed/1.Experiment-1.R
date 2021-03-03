@@ -5,6 +5,8 @@
 ## See https://github.com/FoRTExperiment/FoRTE-mgmt/issues/77
 
 # 0. Set Up  ------------------------------------------------------------------------------------
+library(data.table)
+
 # Define directories. 
 BASE_DIR  <- here::here()
 WRITE_TO  <- file.path(BASE_DIR, 'exp-1'); dir.create(WRITE_TO, showWarnings = FALSE, recursive = TRUE) # This is the directory to write where the different cases should be set up. 
@@ -21,7 +23,7 @@ source(to_source)
 
 # Start by defining the ED run information. 
 IYEARA <- 1900
-IYEARZ <- 2034
+IYEARZ <- 2049
 
 # Find the event files
 event_file <- list.files(EVENT_DIR, pattern = '1day_above.xml', full.names = TRUE)
@@ -36,9 +38,15 @@ event_file <- paste0("'", event_file, "'")
 case <- data.frame(casename = cases, IYEARA = IYEARA, IYEARZ = IYEARZ, EVENT_FILE = event_file)
 
 
-met_headers <- data.table(ED_MET_DRIVER_DB = c(file.path(INPUT_DIR, "NARR-ED2", "ED_MET_DRIVER_HEADER"), 
-                                               file.path(INPUT_DIR, "NARR-ED2", "ED_MET_DRIVER_HEADER_met2")), 
-                          met_name = c('met1', 'met2'))
+met_headers <- data.table(ED_MET_DRIVER_DB = c(file.path(INPUT_DIR, "NARR-ED2_met1", "ED_MET_DRIVER_HEADER"), 
+                                               file.path(INPUT_DIR, "NARR-ED2_met2", "ED_MET_DRIVER_HEADER"), 
+                                               file.path(INPUT_DIR, "NARR-ED2_met3", "ED_MET_DRIVER_HEADER"), 
+                                               file.path(INPUT_DIR, "NARR-ED2_met4", "ED_MET_DRIVER_HEADER"), 
+                                               file.path(INPUT_DIR, "NARR-ED2_met5", "ED_MET_DRIVER_HEADER"), 
+                                               file.path(INPUT_DIR, "NARR-ED2_met6", "ED_MET_DRIVER_HEADER"), 
+                                               file.path(INPUT_DIR, "NARR-ED2_met7", "ED_MET_DRIVER_HEADER"), 
+                                               file.path(INPUT_DIR, "NARR-ED2_met8", "ED_MET_DRIVER_HEADER")), 
+                          met_name = c('met1', 'met2', 'met3', 'met4', 'met5', 'met6', 'met7', 'met8'))
 
 case <- merge(case, met_headers)
 case$casename <- paste(case$casename, case$met_name, sep = '_')
