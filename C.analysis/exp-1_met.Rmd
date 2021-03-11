@@ -27,6 +27,7 @@ library(ggpmisc)
 library(assertthat)
 library(GGally)
 library(knitr)
+library(kableExtra)
 
 # Define the base directory. 
 BASE_DIR <- "/Users/dorh012/Documents/2020/FoRTE/forte-disturbance"
@@ -253,9 +254,52 @@ disturbance_plots
 The over shoot in the met2 track for the carbon fluxes is really interesting! Do we think that would happen if the met1 run continued longer? 
 
 
+Create a summary table of the disturbance, the inital response to the disturbance 
+
+```{r}
+
+annual_data[year %in% c(2018, 2019), ] %>% 
+  .[scn != "harvest_0_1day_above"] %>%  
+  .[, .(scn, year, variable, value, met)] %>% 
+  dcast(scn + variable + met ~ year) %>%  
+  .[ , percent_change := 100 * (`2019` - `2018`) / `2018`] %>% 
+  # summary stats!! 
+  .[ , .(min = min(percent_change), 
+         max = max(percent_change),
+         mean = mean(percent_change), 
+         sd = sd(percent_change)), by = .(scn, variable)] %>%  
+  .[ , .(variable, scn, min, max, mean, sd)] -> 
+summary_data 
+
+summary_data$variable <- gsub(pattern = "_patch",
+                              replacement  = "",
+                              x = summary_data$variable)
+summary_data$severity <- gsub(pattern = "harvest_|_1day_above",
+                              replacement = "", 
+                              x = summary_data$scn)
+summary_data[ , .(variable, severity, min, max, mean, sd)] %>%  
+  setorder(variable) %>% 
+  knitr::kable(format = "html", digits = 2) %>% 
+  collapse_rows(columns = 1, valign = "top")
+
+```
 
 
 ```{r}
+annual_data[variable == "GPP_patch", ] %>% 
+  .[year %in% c(2018:2021), ] %>% 
+  ggplot(aes(year, value, color = scn)) + 
+  geom_point()
+
+
+
+```
+
+
+
+```{r}
+# Plot the individual disturbance severities 
+
 # dt$`Disturbance Severity` <- paste0(dt$severity, ' %')
 # 
 # 
@@ -546,6 +590,10 @@ ggplot(data = recovery_at_X_data[ , year := as.character(year)],
         height = 5,width = 8.5)
  recovery_at
 
+  ggsave(recovery_at, filename = file.path(FIG_OUT, "recovery_at.png"), 
+        height = 5,width = 8.5)
+ recovery_at
+ 
 ```
 
 
@@ -599,8 +647,9 @@ metric   <- unique(full_df$metric_name)
 full_df  <- full_df[var_info, on = .(met_variable = variable)] 
 
 lapply(metric, function(m){
-  #  & met_variable %in% c("prate", "tmp", "sh")
+#    & met_variable %in% c("prate", "tmp", "sh")
   full_df[metric_name == m] %>% 
+    .[met_variable %in%c("prate", "tmp", "sh")]%>% 
   ggplot(aes(met_vavlue, metric_value, color = `Disturbance Severity`)) + 
   geom_point() + 
   facet_grid(variable ~ description, scales = "free",  labeller = label_wrap_gen(width = 20, multi_line = TRUE)) + 
@@ -620,7 +669,7 @@ plots$resitance +
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5)) -> 
   resistance_inputs 
 
- ggsave(resistance_inputs, filename = file.path(FIG_OUT, "resistance_inputs.png"), width = 20, height = 10)
+ ggsave(resistance_inputs, filename = file.path(FIG_OUT, "resistance_inputs.png"), width = 5, height = 5)
  resistance_inputs
 ```
 

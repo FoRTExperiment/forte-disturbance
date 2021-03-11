@@ -5,28 +5,7 @@ ED_OUTPUT_DIR <- here::here('ED-outputs')
 WRITE_TO      <-  here::here('ED-outputs', 'results')
 dir.create(WRITE_TO, showWarnings = FALSE)
 
-#  This is the old experimentn 1 (prior to the met ensemble) work flow
-# exp1_plan <- drake_plan(exp = "exp-1", 
-#            files = list.files(file.path(ED_OUTPUT_DIR, exp), pattern = '.rds', full.names = TRUE), 
-#            scns = get_scn_names(files),
-#            
-#            # Process the monthly values 
-#            monthly = rbindlist(mapply(get_monthly_data, path = files, scn = scns, SIMPLIFY = FALSE)),
-#            mon_data = target({
-#              fname = file.path(WRITE_TO, paste0(exp, '-mon.csv'))
-#              write.csv(monthly, file = fname, row.names = FALSE)
-#              }), 
-#            
-#            # Calculate the annual values 
-#            annual = calculate_annual_values(monthly), 
-#            an_data = target({
-#              fname = file.path(WRITE_TO, paste0(exp, '-yr.csv'))
-#              write.csv(annual, file = fname, row.names = FALSE)
-#            })
-# ) 
-#            
-       
-
+         
 # Thoughts about this work flow, why doesn't drake trigger when more files were added? 
 exp1_met_plan <- drake_plan(exp = "exp-1", 
                         files = list.files(file.path(ED_OUTPUT_DIR, exp), pattern = '.rds', full.names = TRUE), 
