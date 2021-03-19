@@ -113,6 +113,7 @@ monthly_NPP <- function(object, scn){
   # Add the scenario name and change the variable name to reflect the data better
   out <- cbind(scn = scn, out)
   out$variable <- 'NPP_PFT_CO'
+  out$unit <- paste0(out$unit, " per month")
   
   return(out)
 }
@@ -147,6 +148,7 @@ monthly_NEP <- function(object, scn){
   # Add the scenario name 
   out <- cbind(scn = scn, out)
   out$variable <- 'NEP_patch'
+  out$unit <- paste0(out$unit, " per month")
   
   return(out)
 }
@@ -185,6 +187,7 @@ monthly_GPP <- function(object, scn){
   # Add the scenario name 
   out <- cbind(scn = scn, out)
   out$variable <- 'GPP_PFT_CO'
+  out$unit <- paste0(out$unit, " per month")
   
   return(out)
   
@@ -219,6 +222,7 @@ monthly_LAI <- function(object, scn){
     out
   
   out$variable <- "LAI_PFT"
+  out$unit <- paste0(out$unit, " per month")
   
   return(out)
   
@@ -249,6 +253,7 @@ monthly_AGB <- function(object, scn){
   # Add scenario name and cohort labels 
   out <- cbind(scn = scn, add_cohort_labels(out)) 
   out$variable <- "AGB_PFT_CO"
+  out$unit <- paste0(out$unit, " per month")
   
   return(out)
   
@@ -299,6 +304,7 @@ calculate_annual_values <- function(dt){
   
   # Only process the data that had 12 months of data
   dt <- dt[year %in% complete_years$year]
+  dt$unit <- gsub(pattern = " per month", replacement = "", x = dt$unit)
   
   # Subset the data for the carbon fluxes and calculate the total flux per year 
   carbon_fluxes <- c('NPP_PFT_CO', 'NEP_patch', 'GPP_PFT_CO')
@@ -326,6 +332,8 @@ calculate_annual_values <- function(dt){
   
   # Combine the annual results into a singel data table 
   out <- rbind(annual_carbon, annual_avg)
+  out$unit <- paste0(out$unit, " per year")
+  
   return(out)
   }
 
