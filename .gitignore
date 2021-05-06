@@ -12,3 +12,8 @@ forte-disturbance.Rproj
 *.DS_Store
 *.zip
 *.png
+.drake/
+ED-outputs/exp-constant/*
+ED-outputs/met_results/*
+ED-outputs/results/exp-constant-mon.csv
+_drake.R
