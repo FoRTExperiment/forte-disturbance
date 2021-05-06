@@ -356,7 +356,8 @@ fill_in_h5 <- function(file, df, n_steps){
 # Return: str vector of the csv files, located in a temporary directory 
 extract_met_data <- function(DIR, met_dir){
   
-  dir <- file.path(DIR, paste0('NARR-ED2_', met_dir))
+  dir <- file.path(DIR, basename(met_dir))
+  assert_that(dir.exists(dir))
   
   header_file <- list.files(dir, 'HEADER', full.names = TRUE)
   header_contents <- readLines(header_file)

@@ -1,0 +1,11 @@
+Read me for the B.ed directory 
+
+0A.dependencies_functions.R: define helper functions that are used to set up the ED2IN file and other materials. 
+0B.post_processing_functions.R: helper functions that are used to process the hdf5 output files into rds objeccts. 
+
+1.constant_pulse_met.R: sets ED up to run with a series of runs with constant met input + pulses of variable of met to get an understanding of climate impacts. 
+1.constant-met-runs.R: sets ED up to run with a constant met input, it is what we are using as the basic experiment for this work. 
+
+2.post_processing.R: this script processes the hdf5 files written out by ED into a rds file per ED run that is easy to downlaod onto a local machine. 
+
+Z.template-ed_bash.sh: template for submitting an ED run to the que. An alternative way to do an ED run is launch the run on the screen node. 

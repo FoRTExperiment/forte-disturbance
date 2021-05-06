@@ -5,16 +5,21 @@ TO DO
   1. Start by downloading the NARR-ED2.tar.gz from
     https://github.com/FoRTExperiment/ed4forte/releases/download/met-ed2/NARR-ED2.tar.gz and save as 
     in the forte-disturbance/A.inputs/NARR-ED2-main. 
-  2. Souce 1.met_input_processing.R on pic, this script will only need to be ran once and will generate a complete set of met inputs for the ED run.
+  2. Source 1A.constant_met_inputs.R on pic, this script will only need to be ran once and will generate a complete set of met inputs for the ED runs. These runs use a constant year of met data from 1900 to 2050. 
+  3. If the harvest event files are missing or need to be updated source helper_functions.R
 
   
   
 FILE DESCRIPTIONS
   * READ-ME.txt this file 
-  * ED2IN : the ed input file set up for UMBS designed by A. Shiklomanov, downlaoded from 
+  * ED2IN : the ed input file set up for UMBS designed by A. Shiklomanov, downloaded from 
     https://github.com/ashiklom/fortebaseline/blob/master/inst/ED2IN. 
   * events : a directory of harvest event xml files based on the harvest 
-             templates (https://github.com/EDmodel/ED2/blob/master/EDTS/Templates/tonzi_harvest.xml) set up to reproduce the FoRTE girdling treatment groups. 
+             templates (https://github.com/EDmodel/ED2/blob/master/EDTS/Templates/tonzi_harvest.xml) set up to reproduce the FoRTE girdling treatment groups. The events can
+	     be manipulated with the 2.create_eventfiles.R 
+  * helper_functions.R : functions that can be used to manipulate the NARR files.
+  * 1A.constant_met_inputs.R: the script that is used to generate the met ensemble, it only needs to be run once.
+  * 1B.summarize_met_information.R: the script that saves the average monthly and annual data and saves them as a csv file.
   
     
 
