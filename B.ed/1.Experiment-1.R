@@ -52,6 +52,10 @@ case <- merge(case, met_headers)
 case$casename <- paste(case$casename, case$met_name, sep = '_')
 case <- case[c("casename", "IYEARA", "IYEARZ", "EVENT_FILE", "ED_MET_DRIVER_DB")]
 
+case <- case[!grepl(x = case$casename, pattern = "harvest_0_1day_above"), ]
+
+
+
 # For each entry in the case data frame generate the ed run set up. 
 for(i in 1:nrow(case)){ 
   setup_ed_run(case[i,], write_to = WRITE_TO) 

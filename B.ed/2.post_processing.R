@@ -15,10 +15,10 @@ source(to_source)
 
 # 1. Process output directories -----------------------------------------------------------------
 # Start with experiment 1! And move them into the output direcotry 
-files    <- process_outputs(BASE_DIR = BASE_DIR, exp_dirs = 'exp-1')
-exp1_out <- file.path(OUT_DIR, 'exp-1')
+files    <- process_outputs(BASE_DIR = BASE_DIR, exp_dirs = 'exp-constant')
+exp1_out <- file.path(OUT_DIR, 'exp-constant')
 dir.create(exp1_out)
-rds_files <- list.files(file.path(BASE_DIR, 'exp-1'), pattern = '.rds', recursive = TRUE, full.names = TRUE)
+rds_files <- list.files(file.path(BASE_DIR, 'exp-constant'), pattern = '.rds', recursive = TRUE, full.names = TRUE)
 system2('cp', args = c(paste0(rds_files, collapse = ' '), exp1_out))
 
 message('move the ED outputs with scp')
