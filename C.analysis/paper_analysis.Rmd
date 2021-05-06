@@ -1,0 +1,367 @@
+---
+title: "FoRTE Disturbance Paper Analysis"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '4'
+    toc_float: yes
+    number_sections: true
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+
+# Objective 
+
+## Set up script
+
+```{r setup, include=FALSE, message=FALSE, echo = FALSE, cache = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, fig.width = 8, fig.height = 5)
+
+library(dplyr)
+library(ggplot2)
+
+BASE_DIR <- "/Users/dorh012/Documents/2020/FoRTE/forte-disturbance"
+INPUT_DIR <- file.path(BASE_DIR, "ED-outputs", "results")
+
+# Define the color themes and the graphing aesthetics. 
+THEME <- theme_bw()
+FORTE_SEVERITY_COLORS <- c("#000000", "#009E73", "#0072B2", "#D55E00")
+names(FORTE_SEVERITY_COLORS) <- c('0 %', '45 %', '65 %', '85 %')
+```
+
+Load the data 
+
+```{r}
+# Load the ED output data
+ED_output <- read.csv(list.files(INPUT_DIR, "exp-constant-yr.csv", full.names = TRUE), stringsAsFactors = FALSE)
+
+# Load the meteorological input, the annual average and the monthly average. 
+annual_met <- read.csv(list.files(INPUT_DIR, "constant_annual_met_data.csv", full.names = TRUE), stringsAsFactors = FALSE)
+monthly_met <- read.csv(list.files(INPUT_DIR, "constant_annual_met_data-monthly.csv", full.names = TRUE), stringsAsFactors = FALSE)
+
+# Load the results realted to the metrics of ecosystem stability, the log ratio of the time series, resilience, 
+# and resistance. 
+disturbance <- read.csv(file.path(INPUT_DIR, "metric", "ln_ratio_timeseries.csv"), stringsAsFactors = FALSE) %>% 
+  mutate(met = as.character(met))
+resilience <- read.csv(file.path(INPUT_DIR, "metric", "resilience_values.csv"), stringsAsFactors = FALSE) %>% 
+  mutate(met = as.character(met))
+resistance <- read.csv(file.path(INPUT_DIR, "metric", "resistance_values.csv"), stringsAsFactors = FALSE) %>% 
+  mutate(met = as.character(met))
+```
+
+
+# Baseline Scenario 
+
+```{r}
+ED_output %>%  
+  filter(scn == "harvest_0" & variable  %in% c("GPP", "NPP", "Rh", "NEP")) %>% 
+  mutate(description = paste0(variable, ' (', unit,  ')')) %>% 
+  ggplot(aes(year, value, color = met, group = met)) + 
+  geom_line() + 
+   facet_wrap("description", scales = 'free', strip.position = "top",
+             labeller = label_wrap_gen(width = 20, multi_line = TRUE)) +
+  THEME +
+  labs(y = "")
+```
+
+
+# Disturbance Time Series 
+
+Log ratio plots show in the Hillbrand manuscript. 
+
+```{r}
+ggplot(data = disturbance) + 
+  geom_line(aes(year, value, color = severity, line = met), alpha = 0.5) + 
+  facet_wrap("variable", scales = 'free') +
+  THEME +
+  labs(y = "ln(treatment/control)") +
+  scale_color_manual(values = FORTE_SEVERITY_COLORS) + 
+  labs(title = "Disturbance Response")
+```
+
+# Resistance
+
+```{r}
+ggplot(data = resistance) + 
+  geom_point(aes(severity, trough_resistance, color = severity), position = position_jitter(), alpha = 0.5, size = 2) + 
+  facet_wrap("variable", scales = "free") + 
+  labs(y = "ln(dist/control) unitless", 
+       title = "Resistance") + 
+  THEME + 
+  scale_color_manual(values = FORTE_SEVERITY_COLORS)
+
+```
+
+# Resilience
+
+```{r}
+ggplot(data = resilience) + 
+  geom_point(aes(severity, resilience, color = severity), position = position_jitter(), alpha = 0.5, size = 2) + 
+  facet_wrap("variable", scales = "free") + 
+  labs(y = "ln(dist/control) unitless", 
+       title = "Resilience") + 
+  THEME + 
+  scale_color_manual(values = FORTE_SEVERITY_COLORS)
+```
+
+
+# Resistance vs Resilience 
+
+```{r}
+resilience %>%
+  left_join(resistance) %>%  
+  ggplot(aes(trough_resistance, resilience, color = severity)) + 
+  geom_point(alpha = 0.5, size = 2) + 
+   facet_wrap("variable", scales = "free") + 
+  labs(x = "resistance", 
+       y = "resilience", 
+       title = "Resilience vs. Resistance") + 
+  THEME + 
+  scale_color_manual(values = FORTE_SEVERITY_COLORS)
+```
+
+
+# Investigating the relationship between met and the metrics 
+
+Annual met values (by design they should be constant/flat over the entire time period)
+
+```{r, fig.width=8, fig.height=8}
+annual_met %>% 
+  mutate(description = paste0(description, ' (', units, ')')) %>% 
+  ggplot(aes(year, value, color = met, group = met)) + 
+  geom_line() +
+   facet_wrap("description", scales = 'free', strip.position = "top",
+             labeller = label_wrap_gen(width = 20, multi_line = TRUE)) +
+  THEME +
+  labs(y = NULL, x  = NULL,  title = "Annual Met") + 
+  theme(legend.position = "none")
+```
+
+Monthly values, take a look at the pattern that is going on within each year. 
+
+```{r, fig.width=8, fig.height=8}
+monthly_met %>% 
+  mutate(description = paste0(description, ' (', units, ')')) %>% 
+  ggplot(aes(mon_time, value, color = met, group = met, line = met)) + 
+  geom_line() +
+   facet_wrap("description", scales = 'free', strip.position = "top",
+             labeller = label_wrap_gen(width = 20, multi_line = TRUE)) +
+  THEME +
+  labs(y = NULL, x  = NULL, title = "Monthly Met") + 
+  theme(legend.position = "none")
+```
+
+
+
+```{r}
+annual_met %>%  
+  mutate(met = as.integer(met)) %>% 
+  select(met, met_var = variable, met_value = value, met_des = description) %>% 
+  distinct() -> 
+  met_data
+
+resilience %>%
+  left_join(resistance) %>%  
+  mutate(met = as.integer(met)) %>% 
+  left_join(met_data) %>%  
+  select(scn, severity, met, variable, resilience, resistance  = trough_resistance, met_var, met_value, met_des) -> 
+  metrics_v_met
+```
+
+
+## Met vs. Metrics  {.tabset}
+
+
+```{r}
+# Save a copy of the meteorological variables 
+vars <- unique(metrics_v_met$met_var)
+
+# Create the plots of met vs resistance. 
+lapply(vars, function(met_var_name){
+  
+  des <- unique(metrics_v_met[metrics_v_met$met_var == met_var_name, ]$met_des)
+  
+  metrics_v_met %>% 
+    filter(met_var == met_var_name) %>%  
+    ggplot(aes(met_value, resistance, color = severity)) + 
+    geom_point() + 
+    facet_wrap('variable', scales = "free", nrow = 1) + 
+    THEME + 
+    scale_color_manual(values = FORTE_SEVERITY_COLORS) +
+    labs(x  = des, title = 'Resistance') -> 
+    out 
+  
+  return(out)
+  
+}) ->
+  resistance_plots
+names(resistance_plots) <- vars
+
+
+
+# Create the plots of met vs resilience 
+lapply(vars, function(met_var_name){
+  
+  des <- unique(metrics_v_met[metrics_v_met$met_var == met_var_name, ]$met_des)
+  
+  metrics_v_met %>% 
+    filter(met_var == met_var_name) %>%  
+    ggplot(aes(met_value, resilience, color = severity)) + 
+    geom_point() + 
+    facet_wrap('variable', scales = "free", nrow = 1) + 
+    THEME + 
+    scale_color_manual(values = FORTE_SEVERITY_COLORS) +
+    labs(x  = des, title = 'Resilience') -> 
+    out 
+  
+  return(out)
+  
+}) ->
+  resilience_plots
+names(resilience_plots) <- vars
+```
+
+
+
+### downward long wave radiation
+
+```{r, fig.width=10, fig.height=4}
+resistance_plots$dlwrf
+```
+
+```{r, fig.width=10, fig.height=4}
+resilience_plots$dlwrf
+```
+
+
+### near infrared beam downward solar radiation
+
+```{r, fig.width=10, fig.height=4}
+resistance_plots$nbdsf
+```
+
+```{r, fig.width=10, fig.height=4}
+resilience_plots$nbdsf
+```
+
+
+### near IR diffuse downward solar radiation
+
+```{r, fig.width=10, fig.height=4}
+resistance_plots$nddsf
+```
+
+```{r, fig.width=10, fig.height=4}
+resilience_plots$nddsf
+```
+
+### visible beam downward solar radiation
+
+```{r, fig.width=10, fig.height=4}
+resistance_plots$vbdsf
+```
+
+```{r, fig.width=10, fig.height=4}
+resilience_plots$vbdsf
+```
+
+### visible diffuse downward solar radiation
+
+```{r, fig.width=10, fig.height=4}
+resistance_plots$vddsf
+```
+
+```{r, fig.width=10, fig.height=4}
+resilience_plots$vddsf
+```
+
+
+### precipitation rate
+
+```{r, fig.width=10, fig.height=4}
+resistance_plots$prate
+```
+
+```{r, fig.width=10, fig.height=4}
+resilience_plots$prate
+```
+
+### atmospheric pressure
+
+```{r, fig.width=10, fig.height=4}
+resistance_plots$pres
+```
+
+```{r, fig.width=10, fig.height=4}
+resilience_plots$pres
+```
+
+### geopotential height
+
+```{r, fig.width=10, fig.height=4}
+resistance_plots$hgt
+```
+
+```{r, fig.width=10, fig.height=4}
+resilience_plots$hgt
+```
+
+### zonal wind
+
+```{r, fig.width=10, fig.height=4}
+resistance_plots$ugrd
+```
+
+```{r, fig.width=10, fig.height=4}
+resilience_plots$ugrd
+```
+
+
+### meridional wind
+
+```{r, fig.width=10, fig.height=4}
+resistance_plots$vgrd
+```
+
+```{r, fig.width=10, fig.height=4}
+resilience_plots$vgrd
+```
+
+
+### specific humidity
+
+```{r, fig.width=10, fig.height=4}
+resistance_plots$sh
+```
+
+```{r, fig.width=10, fig.height=4}
+resilience_plots$sh
+```
+
+### air temperature
+
+```{r, fig.width=10, fig.height=4}
+resistance_plots$tmp
+```
+
+```{r, fig.width=10, fig.height=4}
+resilience_plots$tmp
+```
+
+
+## Met vs Metrics observations 
+
+Breifly looking through the different pannels what I've notcies is that patterns between meterology values and the stability meteric are more linear looking for resistance comapred to resillience.
+
+The three meterology variables that are the most interesting visually are 
+
+* air temperature 
+* precipitation rate
+* air temperature
+
+
+
+# TO DO
+
+Kalyn do you want to take a stab that a random variancne 
+

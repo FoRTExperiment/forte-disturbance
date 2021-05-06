@@ -1,0 +1,12 @@
+Read me file for the ED-outputs dir 
+
+
+The ED-outputs dir is home to many files that will not be commited to the 
+github repository. 
+
+exp-*: contains a rds file per ED run that was done as part of an experiment.
+	(not commited to github).
+met_results: monthly and annual csv files for each of the collection of NARR 
+	files that ED the ensemble of ED runs (not commited to github). 
+results: dir containing the outputs from the drake C.analysis workflow. 
+	

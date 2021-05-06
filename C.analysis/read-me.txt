@@ -1,0 +1,9 @@
+Read me file for C.analysis 
+
+0.func_*.R: files where functions used in the drake workflow are defined. 
+0.packages.R: contains all of the package used by the drake work flow.
+
+plan.R: where the ED processing & calculating metric drake plans are defiend.
+
+paper_analysis.Rmd: the main Rmd file of the plots that are most likely to be used in the manuscript. This is the main Rmd file to interact with. 
+
