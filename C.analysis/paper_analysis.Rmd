@@ -70,13 +70,14 @@ ED_output %>%
 Log ratio plots show in the Hillbrand manuscript. 
 
 ```{r}
-ggplot(data = disturbance) + 
-  geom_line(aes(year, value, color = severity, line = met), alpha = 0.5) + 
+disturbance %>%  
+  mutate(Severity = severity) %>% 
+  ggplot() + 
+  geom_line(aes(year, value, color = Severity, line = met), alpha = 0.5) + 
   facet_wrap("variable", scales = 'free') +
   THEME +
-  labs(y = "ln(treatment/control)") +
   scale_color_manual(values = FORTE_SEVERITY_COLORS) + 
-  labs(title = "Disturbance Response")
+  labs(y = "ln(treatment/control)", x = "Year") 
 ```
 
 # Resistance
