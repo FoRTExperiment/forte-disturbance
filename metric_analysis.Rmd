@@ -23,6 +23,9 @@ met <- read_csv("ED-outputs/results/constant_annual_met_data.csv")
 
 # Met data
 
+Take a look at the distribution of met data, and perform a Principal Components
+Analysis (PCA) to examine auto-correlation between the various met variables.
+
 ```{r, echo=FALSE}
 met %>% 
   # hgt is constant; remove
@@ -53,7 +56,12 @@ ggplot(resist, aes(trough_resistance, fill = severity)) +
   facet_wrap(~variable)
 ```
 
-# Variable importance
+# Met-metric data
+
+We see from the met analysis above that vbdsf and vddsf are highly
+correlated with nbdsf and nddsf respectively; remove one pair.
+
+Take a first look at the relationship between output variables and met variables.
 
 ```{r, fig.height=8}
 # Build a combined met-metric dataset
@@ -68,12 +76,21 @@ resist_combined %>%
   pivot_longer(dlwrf:vgrd) %>% 
   ggplot(aes(trough_resistance, value, color = variable)) +
   geom_point() + 
-  facet_wrap(variable~name, scales="free_y") + 
+  facet_wrap(variable~name, scales = "free_y") + 
   geom_smooth(method = "lm", formula = y ~ x) +
   theme(legend.position = "none", axis.text = element_text(size = 5))
+```
 
+# Variable importance
+
+Fit a Random Forest model to each output variable (GPP, etc.) and then calculate
+variable importance for each model. Make partial dependence plots for the
+three most important met variables for each output variable.
+
+```{r, message=FALSE}
 # Fit a Random Forest for each variable (across all treatment severities)
 # Note the r.f. functions don't play well with tibbles, so change to data frame
+library(randomForest)
 rc_all <- split(as.data.frame(resist_combined), resist_combined$variable)
 rf_all <- lapply(rc_all, function(x) 
   randomForest(trough_resistance ~ ., data = x[-1:-2], importance = TRUE)
@@ -87,9 +104,9 @@ for(var in names(rf_all)) {
   imp <- as.data.frame(importance(mod))
   imp$met_var <- rownames(imp)
   import[[var]] <- as_tibble(imp)
-
+  
   impvar <- rownames(imp)[order(imp[, 1], decreasing = TRUE)]
-  for (i in seq_along(impvar)) {
+  for (i in seq_along(impvar[1:3])) {
     pp <- partialPlot(mod, rc_all[[var]], impvar[i], plot = FALSE)
     partial[[paste(var, i)]] <- tibble(var = var, 
                                        met_var = impvar[i],
@@ -98,13 +115,29 @@ for(var in names(rf_all)) {
 }
 
 import <- bind_rows(import, .id = "var")
-ggplot(import, aes(met_var, `%IncMSE`)) + geom_col() +
-  coord_flip() +
-  facet_wrap(~var)
+library(forcats)
+lapply(split(import, import$var), function(x) {
+  ggplot(x, aes(fct_reorder(met_var, `%IncMSE`), `%IncMSE`)) + 
+    geom_col() +
+    coord_flip() +
+    xlab("Met variable") +
+    ggtitle(unique(x$var))
+})
 
 partial <- bind_rows(partial)
 ggplot(bind_rows(partial), aes(x, y, color = var)) + 
   geom_line() + 
-  facet_wrap(~var + met_var, scales = "free")
+  xlab("Met var value") + ylab("Metric") +
+  ggtitle("Partial dependence plot") +
+  facet_grid(var ~ met_var, scales = "free")
 ```
+
+# Summary
+
+Interestingly, `tmp` (air temperature) and `vbdsf` (sunlight) are among the
+top-three most important drivers for all four output variables 
+(GPP, NEP, NPP, Rh) for resistance. Atmospheric pressure (`pres`) is
+among the top three for both GPP and NPP resistance: the former because of
+stomatal effects perhaps (?), and the latter because
+of NPP's strong dependence on GPP.
 
