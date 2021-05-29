@@ -72,16 +72,39 @@ resist_combined %>%
   geom_smooth(method = "lm", formula = y ~ x) +
   theme(legend.position = "none", axis.text = element_text(size = 5))
 
-# Fit a Random Forest for each variable
-rc_all <- split(resist_combined, resist_combined$variable)
+# Fit a Random Forest for each variable (across all treatment severities)
+# Note the r.f. functions don't play well with tibbles, so change to data frame
+rc_all <- split(as.data.frame(resist_combined), resist_combined$variable)
 rf_all <- lapply(rc_all, function(x) 
   randomForest(trough_resistance ~ ., data = x[-1:-2], importance = TRUE)
 )
-imp_all <- lapply(rf_all, function(x) {
-  imp <- as.data.frame(importance(x))
+
+# Importance metrics and partial plot data
+import <- list()
+partial <- list()
+for(var in names(rf_all)) {
+  mod <- rf_all[[var]]
+  imp <- as.data.frame(importance(mod))
   imp$met_var <- rownames(imp)
-  as_tibble(imp)
-})
-importance <- bind_rows(imp_all, .id = "variable")
+  import[[var]] <- as_tibble(imp)
+
+  impvar <- rownames(imp)[order(imp[, 1], decreasing = TRUE)]
+  for (i in seq_along(impvar)) {
+    pp <- partialPlot(mod, rc_all[[var]], impvar[i], plot = FALSE)
+    partial[[paste(var, i)]] <- tibble(var = var, 
+                                       met_var = impvar[i],
+                                       x = pp$x, y = pp$y)
+  }
+}
+
+import <- bind_rows(import, .id = "var")
+ggplot(import, aes(met_var, `%IncMSE`)) + geom_col() +
+  coord_flip() +
+  facet_wrap(~var)
+
+partial <- bind_rows(partial)
+ggplot(bind_rows(partial), aes(x, y, color = var)) + 
+  geom_line() + 
+  facet_wrap(~var + met_var, scales = "free")
 ```
 
