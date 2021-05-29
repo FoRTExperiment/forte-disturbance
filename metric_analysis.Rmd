@@ -1,0 +1,87 @@
+---
+title: "metric analysis"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '4'
+    toc_float: yes
+    number_sections: true
+    code_folding: hide
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+
+library(readr)
+resist <- read_csv("ED-outputs/results/metric/resistance_values.csv")
+met <- read_csv("ED-outputs/results/constant_annual_met_data.csv")
+```
+
+# Met data
+
+```{r, echo=FALSE}
+met %>% 
+  # hgt is constant; remove
+  filter(variable != "hgt") %>%   
+  group_by(met, variable) %>% 
+  summarise(value = mean(value), .groups = "drop") ->
+  met2
+
+library(ggplot2)
+theme_set(theme_minimal())
+ggplot(met2, aes(met, value)) +
+  geom_point() + 
+  facet_wrap(~variable, scales = "free_y") +
+  theme(axis.text.x = element_text(angle = 90))
+
+library(tidyr)
+met2_wide <- pivot_wider(met2, id_cols = "met", names_from = "variable")
+pca_met <- prcomp(met2_wide[-1], scale. = TRUE)
+biplot(pca_met, scale = 0)
+pairs(met2_wide[-1])
+```
+
+# Metric data
+
+```{r}
+ggplot(resist, aes(trough_resistance, fill = severity)) +
+  geom_histogram(bins = 20) + 
+  facet_wrap(~variable)
+```
+
+# Variable importance
+
+```{r, fig.height=8}
+# Build a combined met-metric dataset
+resist %>% 
+  select(variable, met, trough_resistance) %>% 
+  # We see from the met analysis above that vbdsf and vddsf are highly
+  # correlated with nbdsf and nddsf respectively; remove one pair
+  left_join(select(met2_wide, -nbdsf, -nddsf), by = "met") ->
+  resist_combined
+
+resist_combined %>% 
+  pivot_longer(dlwrf:vgrd) %>% 
+  ggplot(aes(trough_resistance, value, color = variable)) +
+  geom_point() + 
+  facet_wrap(variable~name, scales="free_y") + 
+  geom_smooth(method = "lm", formula = y ~ x) +
+  theme(legend.position = "none", axis.text = element_text(size = 5))
+
+# Fit a Random Forest for each variable
+rc_all <- split(resist_combined, resist_combined$variable)
+rf_all <- lapply(rc_all, function(x) 
+  randomForest(trough_resistance ~ ., data = x[-1:-2], importance = TRUE)
+)
+imp_all <- lapply(rf_all, function(x) {
+  imp <- as.data.frame(importance(x))
+  imp$met_var <- rownames(imp)
+  as_tibble(imp)
+})
+importance <- bind_rows(imp_all, .id = "variable")
+```
+
