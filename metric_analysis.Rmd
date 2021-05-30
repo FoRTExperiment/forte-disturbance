@@ -14,12 +14,24 @@ date: "`r format(Sys.time(), '%d %B, %Y')`"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+set.seed(1234)
+
 library(dplyr)
 
 library(readr)
 resistance <- read_csv("ED-outputs/results/metric/resistance_values.csv")
 resilience <- read_csv("ED-outputs/results/metric/resilience_values.csv")
 met <- read_csv("ED-outputs/results/constant_annual_met_data.csv")
+
+resistance %>% 
+  select(scn, variable, met, value = trough_resistance, severity) %>% 
+  mutate(metric = "resistance") ->
+  combined
+resilience %>% 
+  select(scn, variable, met, value = resilience, severity) %>% 
+  mutate(metric = "resilience") %>% 
+  bind_rows(combined) ->
+  combined
 ```
 
 # Met data
@@ -63,32 +75,51 @@ ggplot(resilience, aes(resilience, fill = severity)) +
   facet_wrap(~variable)
 ```
 
-# Met-metric data
+# Met-metric data {.tabset}
 
 We see from the met analysis above that vbdsf and vddsf are highly
 correlated with nbdsf and nddsf respectively; remove one pair.
 
 Take a first look at the relationship between output variables and met variables.
 
+## Resistance
+
 ```{r, fig.height=8}
 # Build a combined met-metric dataset
-resistance %>% 
-  select(variable, met, trough_resistance) %>% 
+combined %>% 
+  select(metric, variable, met, value) %>% 
   # We see from the met analysis above that vbdsf and vddsf are highly
   # correlated with nbdsf and nddsf respectively; remove one pair
   left_join(select(met2_wide, -nbdsf, -nddsf), by = "met") ->
+  metric_combined
+
+resistance %>% 
+  select(variable, met, trough_resistance) %>% 
+  left_join(select(met2_wide, -nbdsf, -nddsf), by = "met") ->
   resist_combined
 
-resist_combined %>% 
-  pivot_longer(dlwrf:vgrd) %>% 
-  ggplot(aes(value, trough_resistance, color = variable)) +
+metric_combined %>% 
+  pivot_longer(dlwrf:vgrd, values_to = "met_value") ->
+  metric_comb_long
+
+p_mm <- ggplot(filter(metric_comb_long, metric == "resistance"), 
+            aes(met_value, value, color = variable)) +
   geom_point() + 
-  facet_wrap(variable~name, scales = "free") + 
   geom_smooth(method = "lm", formula = y ~ x, color = "black", linetype = 5) +
+  facet_wrap(~ variable + name, scales = "free") + 
+  ggtitle("Resistance") +
   theme(legend.position = "none", axis.text = element_text(size = 5))
+print(p_mm)
 ```
 
-# Variable importance
+## Resilience
+
+```{r, fig.height=8}
+p_mm <- p_mm %+% filter(metric_comb_long, metric == "resilience")
+print(p_mm + ggtitle("Resilience"))
+```
+
+# Variable importance {.tabset}
 
 Fit a Random Forest model to each output variable (GPP, etc.) and then calculate
 variable importance for each model. Make partial dependence plots for the
@@ -98,9 +129,10 @@ three most important met variables for each output variable.
 # Fit a Random Forest for each variable (across all treatment severities)
 # Note the r.f. functions don't play well with tibbles, so change to data frame
 library(randomForest)
-rc_all <- split(as.data.frame(resist_combined), resist_combined$variable)
+rc_all <- split(as.data.frame(metric_combined), ~ metric + variable)
 rf_all <- lapply(rc_all, function(x) 
-  randomForest(trough_resistance ~ ., data = x[-1:-2], importance = TRUE)
+  # remove metric, variable, met columns and run RF
+  randomForest(value ~ ., data = x[-1:-3], importance = TRUE)
 )
 
 # Importance metrics and partial plot data
@@ -108,42 +140,68 @@ import <- list()
 partial <- list()
 for(var in names(rf_all)) {
   mod <- rf_all[[var]]
+  metric <- rc_all[[var]]$metric[1]
+  variable <- rc_all[[var]]$variable[1]
+  
   imp <- as.data.frame(importance(mod))
   imp$met_var <- rownames(imp)
+  imp$metric <- metric
+  imp$variable <- variable
   import[[var]] <- as_tibble(imp)
   
   impvar <- rownames(imp)[order(imp[, 1], decreasing = TRUE)]
   for (i in seq_along(impvar[1:3])) {
     pp <- partialPlot(mod, rc_all[[var]], impvar[i], plot = FALSE)
-    partial[[paste(var, i)]] <- tibble(var = var, 
+    partial[[paste(var, i)]] <- tibble(metric = metric,
+                                       variable = variable,
                                        met_var = impvar[i],
                                        x = pp$x, y = pp$y)
   }
 }
 
-import <- bind_rows(import, .id = "var")
+import <- bind_rows(import)
+partial <- bind_rows(partial)
+```
+
+## Resistance
+
+```{r}
 library(forcats)
-lapply(split(import, import$var), function(x) {
+f_imp_plot <- function(x) {
   ggplot(x, aes(fct_reorder(met_var, `%IncMSE`), `%IncMSE`)) + 
     geom_col() +
     coord_flip() +
     xlab("Met variable") +
-    ggtitle(unique(x$var))
-})
+    ggtitle(unique(x$variable))
+}
+lapply(split(filter(import, metric == "resistance"), ~ variable), f_imp_plot)
 
-partial <- bind_rows(partial)
-ggplot(bind_rows(partial), aes(x, y, color = var)) + 
+p_pdp <- ggplot(filter(partial, metric == "resistance"), 
+                aes(x, y, color = variable)) + 
   geom_line() + 
-  xlab("Met var value") + ylab("Metric") +
+  xlab("Met var value") + ylab("Resistance") +
   ggtitle("Partial dependence plot") +
-  facet_grid(var ~ met_var, scales = "free")
+  facet_grid(variable ~ met_var, scales = "free")
+print(p_pdp)
+```
+
+## Resilience
+
+```{r}
+# Re-do above plots but now for resilience
+lapply(split(filter(import, metric == "resilience"), ~ variable), f_imp_plot)
+p_pdp <- p_pdp %+% filter(partial, metric == "resilience")
+print(p_pdp + ylab("Resilience"))
 ```
 
 # Summary
 
-Interestingly, `tmp` (air temperature) and `vbdsf` (sunlight) are among the
+For **resistance**, `tmp` (air temperature) and `vbdsf` (sunlight) are among the
 top-three most important drivers for all four output variables 
-(GPP, NEP, NPP, Rh) for resistance. Atmospheric pressure (`pres`) is
-among the top three for both GPP and NPP resistance: the former because of
-stomatal effects perhaps (?), and the latter because
-of NPP's strong dependence on GPP.
+(GPP, NEP, NPP, Rh). Higher temperature and more light translate into higher
+resistance for all variables.
+
+This is largely true for **resilience** as well, although
+`prate` (precipitation) is important for both NPP and Rh; in fact precipitation
+is far and away the most important variable for Rh. Here, however,
+higher temperature and more light mean _less_ resilience.
