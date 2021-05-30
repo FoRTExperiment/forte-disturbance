@@ -17,7 +17,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 
 library(readr)
-resist <- read_csv("ED-outputs/results/metric/resistance_values.csv")
+resistance <- read_csv("ED-outputs/results/metric/resistance_values.csv")
+resilience <- read_csv("ED-outputs/results/metric/resilience_values.csv")
 met <- read_csv("ED-outputs/results/constant_annual_met_data.csv")
 ```
 
@@ -43,7 +44,7 @@ ggplot(met2, aes(met, value)) +
 
 library(tidyr)
 met2_wide <- pivot_wider(met2, id_cols = "met", names_from = "variable")
-pca_met <- prcomp(met2_wide[-1], scale. = TRUE)
+pca_met <- prcomp(met2_wide[-1], scale. = TRUE)  # -1 removes met year column 
 biplot(pca_met, scale = 0)
 pairs(met2_wide[-1])
 ```
@@ -51,8 +52,14 @@ pairs(met2_wide[-1])
 # Metric data
 
 ```{r}
-ggplot(resist, aes(trough_resistance, fill = severity)) +
+ggplot(resistance, aes(trough_resistance, fill = severity)) +
   geom_histogram(bins = 20) + 
+  ggtitle("Resistance") +
+  facet_wrap(~variable)
+
+ggplot(resilience, aes(resilience, fill = severity)) +
+  geom_histogram(bins = 20) + 
+  ggtitle("Resilience") +
   facet_wrap(~variable)
 ```
 
@@ -65,7 +72,7 @@ Take a first look at the relationship between output variables and met variables
 
 ```{r, fig.height=8}
 # Build a combined met-metric dataset
-resist %>% 
+resistance %>% 
   select(variable, met, trough_resistance) %>% 
   # We see from the met analysis above that vbdsf and vddsf are highly
   # correlated with nbdsf and nddsf respectively; remove one pair
@@ -74,10 +81,10 @@ resist %>%
 
 resist_combined %>% 
   pivot_longer(dlwrf:vgrd) %>% 
-  ggplot(aes(trough_resistance, value, color = variable)) +
+  ggplot(aes(value, trough_resistance, color = variable)) +
   geom_point() + 
-  facet_wrap(variable~name, scales = "free_y") + 
-  geom_smooth(method = "lm", formula = y ~ x) +
+  facet_wrap(variable~name, scales = "free") + 
+  geom_smooth(method = "lm", formula = y ~ x, color = "black", linetype = 5) +
   theme(legend.position = "none", axis.text = element_text(size = 5))
 ```
 
@@ -140,4 +147,3 @@ top-three most important drivers for all four output variables
 among the top three for both GPP and NPP resistance: the former because of
 stomatal effects perhaps (?), and the latter because
 of NPP's strong dependence on GPP.
-
