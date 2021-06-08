@@ -109,7 +109,7 @@ fit_data <- function(d){
 # Extract the slope from the list of teh fits 
 # Args 
 #   l: a list of the data frames 
-#   n: the list of the slopes freates by fit_data 
+#   n: the list of the slopes names created by fit_data 
 # Return: a data frame of the slope fits
 extract_fit_data <- function(l, n){
   
@@ -117,15 +117,18 @@ extract_fit_data <- function(l, n){
   
   # If it was determined that there was no segment
   if(length(l[["seg.mod"]]) == 12){
-    seg_slope1 <- l[["seg.mod"]]$coefficients[2]
+    seg_slope1 <- ln_slope
+    temporal_stability <- sigma(l[["lin.mod"]])
     seg_slope2 <- NA
     seg_brk <- NA 
     
   } else {
     slopes <- slope(l[["seg.mod"]])
     seg_slope1 <- slopes$x[1,1] # Extract the slope of the first segment
+    temporal_stability <- sigma(l[["seg.mod"]]) # Etract the standard error about the
     seg_slope2 <- slopes$x[2,1] # Extract the slope of the second segment
     seg_brk <- l[["seg.mod"]]$psi[1,3] # Extract the year of the break point 
+    
   }
   
   # Extract the data about the fit. 
@@ -138,8 +141,10 @@ extract_fit_data <- function(l, n){
                    lin_slope = ln_slope, 
                    seg_slope1 = seg_slope1, 
                    seg_slope2 = seg_slope2, 
-                   seg_brk = seg_brk) 
+                   seg_brk = seg_brk, 
+                   temporal_stability = temporal_stability) 
   
+  return(dt)
 }
 
 
@@ -179,6 +184,39 @@ get_resilience <- function(d){
     select(scn, severity, met, variable, resilience = seg_slope1) %>% 
     # TODO figure out where this is coming from 
     filter(!is.na(resilience))
+}
+
+get_temporal_stability <- function(d){
+  
+  d <- as.data.table(d)
+  disturbance <- calculate_ln_ratio(d=d)
+  resistance <- get_through_resistance(d=d)
+  
+  # Get the data that will be used to calculate the resilience.
+  # We will only use the data from after the 
+  disturbance %>% 
+    left_join(select(resistance, met, variable, severity, trough_year),     
+              by = c("variable", "met", "severity")) %>% 
+    dplyr::filter(year >= trough_year) %>% 
+    dplyr::mutate(year = year - trough_year) %>% 
+    select(-trough_year) -> 
+    data_for_resilience
+  
+  # Organize the data into a list to make is easy to apply the get fit functions to.
+  df_list <- split(data_for_resilience, 
+                   interaction(data_for_resilience$scn, data_for_resilience$variable, 
+                               data_for_resilience$met, sep = "~"), 
+                   drop = TRUE)
+  
+  fits <- lapply(df_list, fit_data)
+
+  mapply(FUN = extract_fit_data, l = fits, n = names(fits), SIMPLIFY = FALSE) %>% 
+    do.call(what = "rbind") %>%  
+    add_severity_lables() -> h
+  
+  
+  
+  
 }
 
 

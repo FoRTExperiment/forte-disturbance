@@ -19,6 +19,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, fig.width = 8, fig.height = 
 
 library(dplyr)
 library(ggplot2)
+library(stringr)
 
 BASE_DIR <- "/Users/dorh012/Documents/2020/FoRTE/forte-disturbance"
 INPUT_DIR <- file.path(BASE_DIR, "ED-outputs", "results")
@@ -52,16 +53,22 @@ resistance <- read.csv(file.path(INPUT_DIR, "metric", "resistance_values.csv"), 
 
 # Baseline Scenario 
 
-```{r}
+```{r, fig.width=6.5, fig.height=4, fig.retina = 4}
 ED_output %>%  
   filter(scn == "harvest_0" & variable  %in% c("GPP", "NPP", "Rh", "NEP")) %>% 
-  mutate(description = paste0(variable, ' (', unit,  ')')) %>% 
-  ggplot(aes(year, value, color = met, group = met)) + 
+  mutate(description = paste0(variable, '\n (', unit,  ')')) %>% 
+  ggplot(aes(year, value, group = met,  color = met)) + 
   geom_line() + 
-   facet_wrap("description", scales = 'free', strip.position = "top",
-             labeller = label_wrap_gen(width = 20, multi_line = TRUE)) +
+  facet_wrap("description", scales = "free",  
+             labeller = label_glue('({.l}) {description}')) + 
   THEME +
-  labs(y = "")
+  labs(y = "", x = "Year")  + 
+  theme(legend.position = "none") -> 
+  plot 
+
+plot + 
+  ggsave("figures/baseline.png", width = 6, height = 4.5)
+
 ```
 
 
@@ -74,51 +81,83 @@ disturbance %>%
   mutate(Severity = severity) %>% 
   ggplot() + 
   geom_line(aes(year, value, color = Severity, line = met), alpha = 0.5) + 
-  facet_wrap("variable", scales = 'free') +
+  facet_wrap("variable", scales = 'free', 
+             labeller = label_glue('({.l}) {variable}')) +
   THEME +
   scale_color_manual(values = FORTE_SEVERITY_COLORS) + 
-  labs(y = "ln(treatment/control)", x = "Year") 
+  guides(colour = guide_legend("Severity")) + 
+  labs(y = "Log Ratio", x = "Years Since Disturbance") -> 
+  plot
+
+plot
+plot + 
+  ggsave("figures/disturbance.png", width = 6, height = 4.5)
+
 ```
 
 # Resistance
 
-```{r}
+```{r, fig.width=5, fig.height=5}
 ggplot(data = resistance) + 
-  geom_point(aes(severity, trough_resistance, color = severity), position = position_jitter(), alpha = 0.5, size = 2) + 
-  facet_wrap("variable", scales = "free") + 
-  labs(y = "ln(dist/control) unitless", 
-       title = "Resistance") + 
-  THEME + 
-  scale_color_manual(values = FORTE_SEVERITY_COLORS)
+  geom_point(aes(severity, trough_resistance, color = severity),
+             position = position_jitter(), 
+             alpha = 0.75, size = 1.5) + 
+  facet_wrap("variable", scales = "free",  
+             labeller = label_glue('({.l}) {variable}')) + 
+  labs(y = "Log Ratio", 
+       title = "Resistance", x = "Severity") + 
+  theme_bw(base_size = 10) +
+  guides(colour = guide_legend("Severity")) + 
+  scale_color_manual(values = FORTE_SEVERITY_COLORS) -> 
+  plot
+
+plot + 
+  ggsave("figures/resistance.png", width = 6, height = 4.5)
 
 ```
 
 # Resilience
 
-```{r}
+```{r, fig.width=5, fig.height=5}
 ggplot(data = resilience) + 
-  geom_point(aes(severity, resilience, color = severity), position = position_jitter(), alpha = 0.5, size = 2) + 
-  facet_wrap("variable", scales = "free") + 
-  labs(y = "ln(dist/control) unitless", 
-       title = "Resilience") + 
-  THEME + 
-  scale_color_manual(values = FORTE_SEVERITY_COLORS)
+  geom_point(aes(severity, resilience, color = severity),              position = position_jitter(), 
+             alpha = 0.75, size = 1.5) + 
+  facet_wrap("variable", scales = "free",  
+             labeller = label_glue('({.l}) {variable}')) + 
+  labs(y = "Log Ratio", 
+       title = "Resilience", 
+        x = "Severity") + 
+  theme_bw(base_size = 10) +
+  guides(colour = guide_legend("Severity")) + 
+  scale_color_manual(values = FORTE_SEVERITY_COLORS) -> 
+  plot 
+
+plot + 
+  ggsave("figures/resilience.png", width = 6, height = 4.5)
 ```
 
 
 # Resistance vs Resilience 
 
-```{r}
-resilience %>%
+
+```{r, fig.width=5, fig.height=5}
+resilience %>% 
   left_join(resistance) %>%  
   ggplot(aes(trough_resistance, resilience, color = severity)) + 
-  geom_point(alpha = 0.5, size = 2) + 
-   facet_wrap("variable", scales = "free") + 
-  labs(x = "resistance", 
-       y = "resilience", 
+  geom_point(alpha = 0.75, size = 1.5) + 
+  facet_wrap("variable", scales = "free",  
+             labeller = label_glue('({.l}) {variable}')) + 
+  labs(x = "Resistance", 
+       y = "Resilience", 
        title = "Resilience vs. Resistance") + 
-  THEME + 
-  scale_color_manual(values = FORTE_SEVERITY_COLORS)
+  theme_bw(base_size = 10) +
+  scale_color_manual(values = FORTE_SEVERITY_COLORS) + 
+  guides(colour = guide_legend("Severity")) -> 
+  plot 
+
+plot + 
+  ggsave("figures/resistance_resilience.png", width = 6, height = 4.5)
+
 ```
 
 
@@ -126,7 +165,7 @@ resilience %>%
 
 Annual met values (by design they should be constant/flat over the entire time period)
 
-```{r, fig.width=8, fig.height=8}
+```{r, fig.width=5, fig.height=5}
 annual_met %>% 
   mutate(description = paste0(description, ' (', units, ')')) %>% 
   ggplot(aes(year, value, color = met, group = met)) + 
@@ -140,16 +179,24 @@ annual_met %>%
 
 Monthly values, take a look at the pattern that is going on within each year. 
 
-```{r, fig.width=8, fig.height=8}
+```{r, fig.width=10, fig.height=5.5}
 monthly_met %>% 
-  mutate(description = paste0(description, ' (', units, ')')) %>% 
+  mutate(units = if_else(variable == "vgrd", 'm s-1', units)) %>% 
+  mutate(description = paste0(str_to_title(description), '\n(', units, ')')) %>% 
   ggplot(aes(mon_time, value, color = met, group = met, line = met)) + 
   geom_line() +
    facet_wrap("description", scales = 'free', strip.position = "top",
-             labeller = label_wrap_gen(width = 20, multi_line = TRUE)) +
+             labeller = label_wrap_gen(width = 20)) +
+  labs(y = NULL, x  = NULL) +
   THEME +
-  labs(y = NULL, x  = NULL, title = "Monthly Met") + 
-  theme(legend.position = "none")
+  scale_x_continuous(labels = c("Jan", "Jun", "Dec"), breaks = c(1, 6, 12)) +
+  theme(legend.position = "none") -> plot
+
+plot + 
+  ggsave("figures/monthly_met.png", width = 10, height = 10)
+
+
+
 ```
 
 

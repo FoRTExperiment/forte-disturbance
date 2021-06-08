@@ -64,7 +64,8 @@ metric_values <- drake_plan(
     data <- get_resilience(ED_data)
     fname <- file.path(metric_dir, 'resilience_values.csv')
     write.csv(data, file = fname, row.names = FALSE)
-  })
+  }), 
+  
 )
 
 
