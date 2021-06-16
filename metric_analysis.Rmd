@@ -103,7 +103,7 @@ metric_combined %>%
   metric_comb_long
 
 p_mm <- ggplot(filter(metric_comb_long, metric == "resistance"), 
-            aes(met_value, value, color = variable)) +
+               aes(met_value, value, color = variable)) +
   geom_point() + 
   geom_smooth(method = "lm", formula = y ~ x, color = "black", linetype = 5) +
   facet_wrap(~ variable + name, scales = "free") + 
@@ -174,7 +174,12 @@ f_imp_plot <- function(x) {
     xlab("Met variable") +
     ggtitle(unique(x$variable))
 }
-lapply(split(filter(import, metric == "resistance"), ~ variable), f_imp_plot)
+xx <- lapply(split(filter(import, metric == "resistance"), ~ variable), f_imp_plot)
+
+library(cowplot)
+varimp_plot <- plot_grid(xx[["GPP"]], xx[["NEP"]], xx[["NPP"]], xx[["Rh"]])
+print(varimp_plot)
+save_plot("varimp_resistance.png", varimp_plot)
 
 p_pdp <- ggplot(filter(partial, metric == "resistance"), 
                 aes(x, y, color = variable)) + 
@@ -189,12 +194,28 @@ print(p_pdp)
 
 ```{r}
 # Re-do above plots but now for resilience
-lapply(split(filter(import, metric == "resilience"), ~ variable), f_imp_plot)
+xx <- lapply(split(filter(import, metric == "resilience"), ~ variable), f_imp_plot)
+varimp_plot <- plot_grid(xx[["GPP"]], xx[["NEP"]], xx[["NPP"]], xx[["Rh"]])
+print(varimp_plot)
+save_plot("varimp_resilience.png", varimp_plot)
+
 p_pdp <- p_pdp %+% filter(partial, metric == "resilience")
 print(p_pdp + ylab("Resilience"))
 ```
 
 # Summary
+
+```{r}
+# Combined partial dependence plot
+partial %>% 
+  mutate(metric = if_else(metric == "resistance", "Resistance", "Resilience")) %>% 
+  ggplot(aes(x, y, color = variable)) + 
+  geom_line() + 
+  xlab("Meteorological variable value") + ylab("Metric value") +
+  scale_color_discrete("") +
+  facet_grid(metric ~ met_var, scales = "free") +
+  theme(axis.text.x = element_text(angle = 90))
+```
 
 For **resistance**, `tmp` (air temperature) and `vbdsf` (sunlight) are among the
 top-three most important drivers for all four output variables 
