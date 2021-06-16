@@ -17,3 +17,6 @@ ED-outputs/exp-constant/*
 ED-outputs/met_results/*
 ED-outputs/results/exp-constant-mon.csv
 _drake.R
+
+# RPubs
+*.dcf
