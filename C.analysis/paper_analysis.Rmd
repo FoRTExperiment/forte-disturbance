@@ -20,6 +20,9 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, fig.width = 8, fig.height = 
 library(dplyr)
 library(ggplot2)
 library(stringr)
+library(stickylabeller)
+library(ggpmisc)
+library(ggpubr)
 
 BASE_DIR <- "/Users/dorh012/Documents/2020/FoRTE/forte-disturbance"
 INPUT_DIR <- file.path(BASE_DIR, "ED-outputs", "results")
@@ -52,6 +55,23 @@ resistance <- read.csv(file.path(INPUT_DIR, "metric", "resistance_values.csv"), 
 
 
 # Baseline Scenario 
+
+```{r}
+ED_output %>%  
+  filter(scn == "harvest_0" & variable  %in% c("GPP", "NPP", "Rh", "NEP", "AGB")) %>% 
+  mutate(description = paste0(variable, '\n (', unit,  ')')) %>% 
+  dplyr::filter(year == 2020) %>% 
+  group_by(variable, unit) %>% 
+  summarise(sd = sd(value), mean = mean(value)) %>% 
+  ungroup %>% 
+  mutate(cv = sd/mean)
+
+
+```
+
+
+
+
 
 ```{r, fig.width=6.5, fig.height=4, fig.retina = 4}
 ED_output %>%  
@@ -97,6 +117,20 @@ plot +
 
 # Resistance
 
+```{r}
+
+resistance %>% 
+  group_by(variable, severity) %>%  
+  summarise(mean = mean(trough_resistance), sd = sd(trough_resistance)) 
+
+
+```
+
+
+
+
+
+
 ```{r, fig.width=5, fig.height=5}
 ggplot(data = resistance) + 
   geom_point(aes(severity, trough_resistance, color = severity),
@@ -117,6 +151,15 @@ plot +
 ```
 
 # Resilience
+
+```{r}
+resilience %>% 
+  group_by(variable, severity) %>% 
+  summarise(mean = mean(resilience))
+
+
+```
+
 
 ```{r, fig.width=5, fig.height=5}
 ggplot(data = resilience) + 
@@ -145,7 +188,7 @@ resilience %>%
   left_join(resistance) %>%  
   ggplot(aes(trough_resistance, resilience, color = severity)) + 
   geom_point(alpha = 0.75, size = 1.5) + 
-  facet_wrap("variable", scales = "free",  
+  facet_wrap("variable", #scales = "free",  
              labeller = label_glue('({.l}) {variable}')) + 
   labs(x = "Resistance", 
        y = "Resilience", 
@@ -157,6 +200,50 @@ resilience %>%
 
 plot + 
   ggsave("figures/resistance_resilience.png", width = 6, height = 4.5)
+
+```
+
+```{r, fig.width=5, fig.height=5}
+my.formula <- y ~ x
+
+resilience %>% 
+  left_join(resistance) %>%  
+  ggplot(aes(trough_resistance, resilience, color = severity)) + 
+  geom_point(alpha = 0.75, size = 1.5) + 
+  geom_smooth(method = "lm", size = 0.5, alpha = 0.2) + 
+  stat_cor(method = "pearson", aes(label = ..r.label..),
+           size = 3, label.x.npc = "left", label.y.npc = "bottom", 
+           r.accuracy = 0.01) + 
+  labs(x = "Resistance", 
+       y = "Resilience", 
+       title = "Resilience vs. Resistance") + 
+  theme_bw(base_size = 10) +
+  scale_color_manual(values = FORTE_SEVERITY_COLORS) + 
+    facet_wrap("variable", scales = "free",  
+            labeller = label_glue('({.l}) {variable}')) + 
+  guides(colour = guide_legend("Severity")) +
+  ggsave("figures/resistance_resilience3.png", width = 6, height = 4.5)
+
+```
+
+```{r}
+
+
+resilience %>% 
+  left_join(resistance) %>%  
+  ggplot(aes(trough_resistance, resilience, color = severity)) + 
+  geom_point(alpha = 0.75, size = 1.5) + 
+  geom_smooth(method = "lm", size = 0.5, alpha = 0.2) + 
+  stat_cor(method = "pearson", aes(label = ..r.label..),
+           size = 3, label.x.npc = "left", label.y.npc = "bottom", 
+           r.accuracy = 0.01) + 
+  labs(x = "Resistance", 
+       y = "Resilience", 
+       title = "Resilience vs. Resistance") + 
+  theme_bw(base_size = 10) +
+  scale_color_manual(values = FORTE_SEVERITY_COLORS) + 
+  guides(colour = guide_legend("Severity"))
+
 
 ```
 
