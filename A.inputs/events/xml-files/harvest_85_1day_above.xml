@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<eventlist>
+  <event>
+    <year>2019</year>
+    <doy>141</doy>
+    <harvest>
+      <agb_frac>0.85</agb_frac>
+      <bgb_frac>0</bgb_frac>
+      <fol_frac>0.85</fol_frac>
+      <stor_frac>0.85</stor_frac>
+    </harvest>
+  </event>
+</eventlist>
