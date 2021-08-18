@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<eventlist>
+  <event>
+    <year>2019</year>
+    <doy>141</doy>
+    <harvest>
+      <agb_frac>0.65</agb_frac>
+      <bgb_frac>0.65</bgb_frac>
+      <fol_frac>0.65</fol_frac>
+      <stor_frac>0.65</stor_frac>
+    </harvest>
+  </event>
+  <event>
+    <year> 2019 </year>
+    <doy> 141 </doy>
+    <harvest>
+      <agb_frac> 0 </agb_frac>
+      <bgb_frac> 0 </bgb_frac>
+      <fol_frac> 0 </fol_frac>
+      <stor_frac> 0 </stor_frac>
+    </harvest>
+  </event>
+  <event>
+    <year> 2019 </year>
+    <doy> 141 </doy>
+    <harvest>
+      <agb_frac> 0 </agb_frac>
+      <bgb_frac> 0 </bgb_frac>
+      <fol_frac> 0 </fol_frac>
+      <stor_frac> 0 </stor_frac>
+    </harvest>
+  </event>
+</eventlist>
