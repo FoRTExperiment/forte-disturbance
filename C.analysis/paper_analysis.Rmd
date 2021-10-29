@@ -62,7 +62,7 @@ annual_met %>%
   summarise(value = sqrt(sum(value))) %>% 
   ungroup() %>%
   mutate(units = "m s-1", 
-         description = "total winnd", 
+         description = "total wind", 
          variable = "grd") -> 
   wind_df
   
@@ -80,7 +80,7 @@ monthly_met %>%
   summarise(value = sqrt(sum(value))) %>% 
   ungroup() %>%
   mutate(units = "m s-1", 
-         description = "total winnd", 
+         description = "total wind", 
          variable = "grd") -> 
   wind_df
   
@@ -129,6 +129,36 @@ data.frame(description = c("NPP\n (MgC ha-1 year-1)", "NEP\n (MgC ha-1 year-1)")
            year = c(2001, 2001)) -> 
   obs
 
+
+
+chrono <- rbind(
+  data.frame(value = c(0.55, 1.35, 1.30, 0.80, 0.45, 1.53), 
+             year = c(6, 24, 50, 56, 68, 85), 
+           variable = "NEP", 
+           description = "NEP\n (MgC ha-1 year-1)"), 
+  data.frame(value = c(5.07, 5.13, 5.44, 5.27,  5.04, 6.54),
+             year = c(6, 24, 50, 56, 68, 85), 
+             variable = "NPP",        
+             description = "NPP\n (MgC ha-1 year-1)"), 
+    data.frame(value = c(4.52, 3.78, 4.14, 4.47, 4.59, 5.01),
+             year = c(6, 24, 50, 56, 68, 85), 
+             variable = "Rh",        
+             description = "Rh\n (MgC ha-1 year-1)"))
+
+chrono$year <- chrono$year + 1900
+
+
+
+
+
+# read in other UMBS data 
+read.csv(file.path(BASE_DIR, "C.analysis", "UMBS_data",
+                   "US-UMB_AnnualNEP_2002-2019.csv")) %>%
+  tidyr::gather(c("NEP", "RE", "GPP"), key = "variable", value = "value") %>%  
+  filter(variable  %in% c("GPP", "NPP", "Rh", "NEP")) %>% 
+  mutate(description = paste0(variable, '\n (MgC ha-1 year-1)')) -> 
+  more_obs
+
 ED_output %>%  
   filter(scn == "harvest_0" & variable  %in% c("GPP", "NPP", "Rh", "NEP")) %>% 
   mutate(description = paste0(variable, '\n (', unit,  ')')) -> 
@@ -136,8 +166,10 @@ ED_output %>%
 
   ggplot() + 
   geom_line(data = to_plot, aes(year, value, group = met), 
-            alpha = 0.9, color = "#999999", ) + 
+            alpha = 0.9, color = "#999999") + 
   geom_pointrange(data = obs, aes(x=year, y=mean, ymin=lower, ymax=upper)) + 
+  geom_line(data = more_obs, aes(Year, value), color = "black") + 
+  geom_point(data = chrono, aes(year, value), color = "red") + 
   facet_wrap("description", scales = "free", 
              labeller = label_glue('({.l}) {description}')) +
   THEME +
@@ -289,12 +321,13 @@ resilience %>%
   left_join(resistance) %>%  
   ggplot(aes(trough_resistance, resilience, color = severity)) + 
   geom_point(alpha = 0.75, size = 1.5) + 
-  geom_smooth(method = "lm", size = 0.5, alpha = 0.2) + 
+  geom_smooth(method = "lm", size = 0.5, alpha = 0.2, show_guide  = FALSE) + 
   stat_cor(method = "pearson", 
            aes(label = ..r.label..),
            size = 3, 
            label.y.npc = "bottom",
-           r.accuracy = 0.01) + 
+           r.accuracy = 0.01, 
+            show_guide  = FALSE) + 
   labs(x = "Resistance", 
        y = "Resilience", 
        title = "Resilience vs. Resistance") + 
@@ -303,9 +336,10 @@ resilience %>%
     facet_wrap("variable", 
                scales = "free", 
                labeller = label_glue('({.l}) {variable}')) + 
-  guides(colour = guide_legend("Severity")) -> 
+  guides(colour = guide_legend("Severity")) ->
   plot
-  ggsave(plot, filename = "figures/resistance_resilience3.png", width = 6, height = 4.5)
+  ggsave(plot, 
+         filename = "figures/resistance_resilience3.png", width = 6, height = 4.5)
 
 ```
 
