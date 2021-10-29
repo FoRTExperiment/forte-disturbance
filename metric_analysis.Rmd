@@ -59,7 +59,7 @@ met %>%
   summarise(value = sqrt(sum(value))) %>% 
   ungroup() %>%
   mutate(units = "m s-1", 
-         description = "total winnd", 
+         description = "total wind", 
          variable = "grd") -> 
   wind_df
   
